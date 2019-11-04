@@ -14,4 +14,4 @@ chip8emulator: chip8emulator.c
 	$(CC) -o $@ $< $(CFLAGS) $(LDFLAGS)
 
 clean:
-	$(RM) -f *.o *.exe chip8disassembler chip8emulator
+	$(RM) -rf *.o chip8disassembler chip8emulator *.dSYM

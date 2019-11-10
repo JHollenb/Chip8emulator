@@ -5,9 +5,9 @@
 
 int main (int argc, char ** argv)
 {
-	chip8 myChip;
-	myChip.open_file(argv[1]);
-	myChip.print_file();
+	chip8 myChip(argv[1]);
+
+	myChip.printDisassembly();
 
 	return 0;
 }

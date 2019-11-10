@@ -1,9 +1,7 @@
-#include <string.h>
-#include <stdlib.h>
-#include <stdint.h>
 #include "chip8.h"
 
-chip8::chip8() :
+chip8::chip8(const char * rom) :
+	m_romPath(rom),
 	m_file(NULL),
 	m_fsize(0)
 {
@@ -31,6 +29,8 @@ void chip8::p_reg(const char * call, uint8_t byte)
 
 void chip8::disassemble (unsigned char * buffer, int pc)
 {
+	// 0000     0000
+	// code[1]	code[0]
 	uint8_t * code = &buffer[pc];
 	uint8_t x = (code[0] & 0xf);
 	uint8_t y = (code[1] >> 4);
@@ -110,24 +110,24 @@ void chip8::disassemble (unsigned char * buffer, int pc)
 	}
 }
 
-int chip8::open_file(const char * file)
+int chip8::openRom()
 {
-	int retval = 0;
+	int retval = SUCCESS;
 
-	m_file = fopen(file, "rb");
+	m_file = fopen(m_romPath, "rb");
 
 	if (!m_file)
 	{
-		printf("[ERROR] Failed to open %s\n", file);
-		retval = -1;
+		printf("[ERROR] Failed to open %s\n", m_romPath);
+		retval = ERROR;
 	}
 
 	return retval;
 }
 
-void chip8::print_file()
+void chip8::printDisassembly()
 {
-	if (m_file)
+	if (openRom() == SUCCESS)
 	{
 		fseek(m_file, 0L, SEEK_END);
 		m_fsize = ftell(m_file);
@@ -155,7 +155,55 @@ void chip8::print_file()
 	}
 	else
 	{
-		printf("No file found!\n");
+		printf("[ERROR] No file found!\n");
+		exit(1);
+	}
+
+}
+
+void chip8::init()
+{
+	m_states.memory = (uint8_t *)calloc (1024 * 4, 1);
+	m_states.screen = &m_states.memory[0xf00];
+	m_states.sp = 0xfa0;
+	// TODO: OFFSET
+	m_states.pc = 0x200;
+}
+
+void chip8::emulate()
+{
+	// 0000     0000
+	// code[1]	code[0]
+	//uint8_t * code = &buffer[pc];
+	//uint8_t x = (code[0] & 0xf);
+	//uint8_t y = (code[1] >> 4);
+	//uint8_t n = (code[1] & 0xf);
+	//uint8_t kk = code[1];
+	// x, kk == addr
+	uint8_t * op = &m_states.memory[m_states.pc];
+	int highnib = (*op & 0xf0) >> 4;
+	switch (highnib)
+	{
+		case 0x00: unimplementedInstruction(); break;
+		case 0x01: unimplementedInstruction(); break;
+		case 0x02: unimplementedInstruction(); break;
+		case 0x03: unimplementedInstruction(); break;
+		case 0x04: unimplementedInstruction(); break;
+		case 0x05: unimplementedInstruction(); break;
+		case 0x06: unimplementedInstruction(); break;
+		case 0x07: unimplementedInstruction(); break;
+		case 0x08: unimplementedInstruction(); break;
+		case 0x09: unimplementedInstruction(); break;
+		case 0x0a: unimplementedInstruction(); break;
+		case 0x0b: unimplementedInstruction(); break;
+		case 0x0c: unimplementedInstruction(); break;
+		case 0x0d: unimplementedInstruction(); break;
+		case 0x0e: unimplementedInstruction(); break;
+		case 0x0f: unimplementedInstruction(); break;
 	}
 }
 
+void chip8::unimplementedInstruction()
+{
+	printf("[DEBUG] Unimplemented instruction\n");
+}

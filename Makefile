@@ -1,17 +1,18 @@
-CC = gcc            # default is CC = cc
-CFLAGS = -g -Wall   # default is CFLAGS = [blank]
-CPPFLAGS =          # default is CPPFLAGS = [blank]
+CC = g++
+CFLAGS = -g -Wall 
+TARGET = main
+
+CPPFLAGS =       
 LDFLAGS = 
+SOURCES = main.cpp chip8.cpp 
 
 # default compile command: $(CC) $(CFLAGS) $(CPPFLAGS) -c -o <foo>.o <foo>.c
 
-all: chip8disassembler chip8emulator
+$(TARGET) : $(TARGET).o chip8.o
+	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).o chip8.o
 
-chip8disassembler: chip8disassembler.c
-	$(CC) -o $@ $< $(CFLAGS) $(LDFLAGS)
-
-chip8emulator: chip8emulator.c
-	$(CC) -o $@ $< $(CFLAGS) $(LDFLAGS)
+chip8: chip8.cpp chip8.h
+	$(CC) $(CFLAGS) -c chip8.cpp
 
 clean:
-	$(RM) -rf *.o chip8disassembler chip8emulator *.dSYM
+	$(RM) -rf *.o main

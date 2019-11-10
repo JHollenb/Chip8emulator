@@ -1,35 +1,36 @@
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include "chip8.h"
 
-#define OFFSET 0x200
+chip8::chip8() :
+	m_file(NULL),
+	m_fsize(0)
+{
+}
 
-// See [Chip 8](http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#0.1)
-
-void p_addr(char * call, uint8_t byte0, uint8_t byte1)
+void chip8::p_addr(const char * call, uint8_t byte0, uint8_t byte1)
 {
 	printf("%-10s $%01x%02x", call, byte0, byte1);
 }
 
-void p_reg_byte(char * call, uint8_t byte0, uint8_t byte1)
+void chip8::p_reg_byte(const char * call, uint8_t byte0, uint8_t byte1)
 {
 	printf("%-10s V%01X,#%02x", call, byte0, byte1);
 }
 
-void p_reg_reg(char * call, uint8_t byte0, uint8_t byte1)
+void chip8::p_reg_reg(const char * call, uint8_t byte0, uint8_t byte1)
 {
 	printf("%-10s V%01X,V%01X", call, byte0, byte1);
 }
 
-void p_reg(char * call, uint8_t byte)
+void chip8::p_reg(const char * call, uint8_t byte)
 {
 	printf("%-10s V%01X", call, byte);
 }
 
-int disassemble (unsigned char * buffer, int pc)
+void chip8::disassemble (unsigned char * buffer, int pc)
 {
-	int retval = 1;
 	uint8_t * code = &buffer[pc];
 	uint8_t x = (code[0] & 0xf);
 	uint8_t y = (code[1] >> 4);
@@ -107,33 +108,54 @@ int disassemble (unsigned char * buffer, int pc)
 			break;
 		default: printf("Not implemented");
 	}
+}
+
+int chip8::open_file(const char * file)
+{
+	int retval = 0;
+
+	m_file = fopen(file, "rb");
+
+	if (!m_file)
+	{
+		printf("[ERROR] Failed to open %s\n", file);
+		retval = -1;
+	}
+
 	return retval;
 }
 
-int main (int argc, char ** argv)
+void chip8::print_file()
 {
-	FILE * f = fopen(argv[1], "rb");
-
-	if (!f)
+	if (m_file)
 	{
-		printf("[ERROR] Failed to open %s\n", argv[1]);
-		exit(1);
+		fseek(m_file, 0L, SEEK_END);
+		m_fsize = ftell(m_file);
+
+		if (m_fsize == 0)
+		{
+			printf("[WARNING] File size is 0!\n");
+		}
+
+		fseek(m_file, 0L, SEEK_SET);
+
+		// Chip8 puts programs in memory at 0x200
+		unsigned char * buffer = (unsigned char *)malloc (m_fsize + OFFSET);
+		fread (buffer + OFFSET, m_fsize, 1, m_file);
+		fclose (m_file);
+
+		// process file
+		int pc = OFFSET;
+		while (pc < (m_fsize + OFFSET))
+		{
+			disassemble (buffer, pc);
+			pc+=2;
+			printf("\n");
+		}
 	}
-
-	fseek(f, 0L, SEEK_END);
-	int fsize = ftell(f);
-	fseek(f, 0L, SEEK_SET);
-
-	// Chip8 puts programs in memory at 0x200
-	unsigned char * buffer = malloc (fsize + OFFSET);
-	fread (buffer + OFFSET, fsize, 1, f);
-	fclose (f);
-	int pc = OFFSET;
-	while (pc < (fsize + OFFSET))
+	else
 	{
-		disassemble (buffer, pc);
-		pc+=2;
-		printf("\n");
+		printf("No file found!\n");
 	}
-	return 0;
 }
+

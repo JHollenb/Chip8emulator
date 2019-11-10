@@ -3,7 +3,17 @@
 chip8::chip8(const char * rom) :
 	m_romPath(rom),
 	m_file(NULL),
-	m_fsize(0)
+	m_fsize(0),
+	v(),
+	i(0),
+	pc(0),
+	delay(0),
+	sound(0),
+	memory(),
+	screen(),
+	sp(0),
+	stack(),
+	key()
 {
 }
 
@@ -27,11 +37,9 @@ void chip8::p_reg(const char * call, uint8_t byte)
 	printf("%-10s V%01X", call, byte);
 }
 
-void chip8::disassemble (unsigned char * buffer, int pc)
+void chip8::disassemble ()
 {
-	// 0000     0000
-	// code[1]	code[0]
-	uint8_t * code = &buffer[pc];
+	uint8_t * code = &memory[pc];
 	uint8_t x = (code[0] & 0xf);
 	uint8_t y = (code[1] >> 4);
 	uint8_t n = (code[1] & 0xf);
@@ -86,7 +94,7 @@ void chip8::disassemble (unsigned char * buffer, int pc)
 		case 0xe: 
 			switch (kk)
 			{
-				case 0x9e: p_reg("SKP", x); break;
+				case 0xa2: p_reg("SKP", x); break;
 				case 0xa1: p_reg("SKNP", x); break;
 				default: printf("UNKNOWN E"); break;
 			}
@@ -110,7 +118,7 @@ void chip8::disassemble (unsigned char * buffer, int pc)
 	}
 }
 
-int chip8::openRom()
+int chip8::openROM()
 {
 	int retval = SUCCESS;
 
@@ -125,9 +133,10 @@ int chip8::openRom()
 	return retval;
 }
 
-void chip8::printDisassembly()
+int chip8::loadROM()
 {
-	if (openRom() == SUCCESS)
+	int retval = SUCCESS;
+	if (openROM() == SUCCESS)
 	{
 		fseek(m_file, 0L, SEEK_END);
 		m_fsize = ftell(m_file);
@@ -135,58 +144,67 @@ void chip8::printDisassembly()
 		if (m_fsize == 0)
 		{
 			printf("[WARNING] File size is 0!\n");
+			retval = ERROR;
 		}
 
 		fseek(m_file, 0L, SEEK_SET);
 
 		// Chip8 puts programs in memory at 0x200
-		unsigned char * buffer = (unsigned char *)malloc (m_fsize + OFFSET);
-		fread (buffer + OFFSET, m_fsize, 1, m_file);
+		//unsigned char * buffer = (unsigned char *) malloc (m_fsize + OFFSET);
+		fread (memory + OFFSET, m_fsize, 1, m_file);
 		fclose (m_file);
-
-		// process file
-		int pc = OFFSET;
-		while (pc < (m_fsize + OFFSET))
-		{
-			disassemble (buffer, pc);
-			pc+=2;
-			printf("\n");
-		}
 	}
 	else
 	{
 		printf("[ERROR] No file found!\n");
-		exit(1);
+		retval = ERROR;
 	}
+	return retval;
+}
 
+void chip8::printDisassembly()
+{
+	while (pc < (m_fsize + OFFSET))
+	{
+		disassemble();
+		pc+=2;
+		printf("\n");
+	}
 }
 
 void chip8::init()
 {
-	m_states.memory = (uint8_t *)calloc (1024 * 4, 1);
-	m_states.screen = &m_states.memory[0xf00];
-	m_states.sp = 0xfa0;
-	// TODO: OFFSET
-	m_states.pc = 0x200;
+	// TODO: Makesure sizes align
+	//memory = (uint8_t *)calloc (1024 * 4, 1);
+	//screen = &memory[0xf00];
+	sp = 0xfa0;
+	pc = OFFSET;
+
+	// load ROM into memory at designated offset
+	loadROM();
 }
 
-void chip8::emulate()
+void chip8::loop()
 {
-	// 0000     0000
-	// code[1]	code[0]
-	//uint8_t * code = &buffer[pc];
-	//uint8_t x = (code[0] & 0xf);
-	//uint8_t y = (code[1] >> 4);
-	//uint8_t n = (code[1] & 0xf);
-	//uint8_t kk = code[1];
+	uint16_t opcode = memory[pc] << 8 | memory[pc + 1];
+	uint8_t x = (memory[pc] & 0xf);
+	uint8_t y = (memory[pc + 1] >> 4);
+	uint8_t n = (memory[pc + 1] & 0xf);
+	uint8_t kk = memory[pc + 1];
 	// x, kk == addr
-	uint8_t * op = &m_states.memory[m_states.pc];
-	int highnib = (*op & 0xf0) >> 4;
-	switch (highnib)
+
+	switch (memory[pc] >> 4)
 	{
 		case 0x00: unimplementedInstruction(); break;
 		case 0x01: unimplementedInstruction(); break;
-		case 0x02: unimplementedInstruction(); break;
+		case 0x2: 
+		{
+			printf("yeet");
+			stack[sp] = pc;
+			++sp;
+			//pc = opcode & 0x0FFF;
+			break;
+		}
 		case 0x03: unimplementedInstruction(); break;
 		case 0x04: unimplementedInstruction(); break;
 		case 0x05: unimplementedInstruction(); break;
@@ -200,10 +218,12 @@ void chip8::emulate()
 		case 0x0d: unimplementedInstruction(); break;
 		case 0x0e: unimplementedInstruction(); break;
 		case 0x0f: unimplementedInstruction(); break;
+		//default: printf("Unknown opcode: %X\n", opcode);
 	}
 }
 
 void chip8::unimplementedInstruction()
 {
-	printf("[DEBUG] Unimplemented instruction\n");
+	uint16_t opcode = memory[pc] << 8 | memory[pc + 1];
+	printf("[DEBUG] Unimplemented instruction: %x\n", opcode);
 }

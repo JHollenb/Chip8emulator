@@ -14,35 +14,38 @@ class chip8
 public:
 	typedef struct chipStates
 	{
-		uint8_t V[16];
-		uint16_t i;
-		uint16_t sp;
-		uint16_t pc;
-		uint8_t delay;
-		uint8_t sound;
-		uint8_t * memory;
-		uint8_t * screen;
 	} chipStates;
 
 	chip8(const char * rom);
 	~chip8(){};
 	void printDisassembly ();
 	void init();
-	void emulate();
+	void loop();
 protected:
 private:
 	void p_addr(const char * call, uint8_t byte0, uint8_t byte1);
 	void p_reg_byte(const char * call, uint8_t byte0, uint8_t byte1);
 	void p_reg_reg(const char * call, uint8_t byte0, uint8_t byte1);
 	void p_reg(const char * call, uint8_t byte);
-	int openRom ();
-	void disassemble (unsigned char * buffer, int pc);
+	int openROM();
+	int loadROM();
+	void disassemble();
 	void unimplementedInstruction();
 	
-
 	// Member vars
 	const char * m_romPath;
 	FILE * m_file;
 	int m_fsize;
-	chipStates m_states;
+
+	// States
+	uint8_t v[16];				// CPU registers
+	uint16_t i;					// Index register
+	uint16_t pc;				// Program counter
+	uint8_t delay;				// delay timer @ 60Hz
+	uint8_t sound;				// sound timer @ 60Hz
+	uint8_t memory[4096];		// Chip8 has 4k memory
+	uint8_t screen[64 * 32];	// Graphics array (screen is 64 x 32)
+	uint16_t sp;			    // Stack pointer
+	uint16_t stack[16];			// 16 levels of stack
+	uint8_t key[16];			// Hex keypad 0x0 - 0xf
 };

@@ -5,9 +5,24 @@
 
 int main (int argc, char ** argv)
 {
-	chip8 myChip(argv[1]);
+	// TODO: set up graphics
+	// TODO: set up input
 
-	myChip.printDisassembly();
+	// Initialize chip8 and load ROM into memory
+	chip8 myChip(argv[1]);
+	myChip.init();
+    myChip.printDisassembly();
+
+	//myChip.loop();
+
+	//while (1)
+	//{
+		// loop one cycle
+		//myChip.loop();
+
+		// TODO: update graphics
+		// TODO: update key press state
+	//}
 
 	return 0;
 }

@@ -32,3 +32,5 @@ See [stack examples](http://www.emulator101.com/stack-group.html).
 
 ### I/O
 See [I/O & Special examples](http://www.emulator101.com/io-and-special-group.html)
+
+refs [this](http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/)

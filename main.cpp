@@ -11,9 +11,13 @@ int main (int argc, char ** argv)
 	// Initialize chip8 and load ROM into memory
 	chip8 myChip(argv[1]);
 	myChip.init();
-    myChip.printDisassembly();
+    //myChip.printDisassembly();
 
-	//myChip.loop();
+	int iter = 5;
+	for (int i = 0 ; i < iter; ++i)
+	{
+		myChip.loop();
+	}
 
 	//while (1)
 	//{

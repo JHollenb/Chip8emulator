@@ -177,8 +177,11 @@ void chip8::init()
 	// TODO: Makesure sizes align
 	//memory = (uint8_t *)calloc (1024 * 4, 1);
 	//screen = &memory[0xf00];
-	sp = 0xfa0;
+	//sp = 0xfa0;
+	sp = 0;
 	pc = OFFSET;
+
+	bzero(&stack, sizeof(stack));
 
 	// load ROM into memory at designated offset
 	loadROM();
@@ -187,39 +190,62 @@ void chip8::init()
 void chip8::loop()
 {
 	uint16_t opcode = memory[pc] << 8 | memory[pc + 1];
-	uint8_t x = (memory[pc] & 0xf);
-	uint8_t y = (memory[pc + 1] >> 4);
-	uint8_t n = (memory[pc + 1] & 0xf);
-	uint8_t kk = memory[pc + 1];
-	// x, kk == addr
+	uint8_t * code = &memory[pc];
 
-	switch (memory[pc] >> 4)
+	//uint8_t x = (opcode & 0x00F0) >> 8;
+	uint8_t x = (code[0] & 0xf);
+	uint8_t y = (code[1] >> 4);
+	uint8_t n = (code[1] & 0xf);
+	uint8_t kk = code[1];
+	uint16_t addr = (x << 8 | kk);
+
+	printf("x: %X ", x);
+	printf("kk: %X\n ", kk);
+
+	printf("[DEBUG] pc: 0x%04X Opcode: 0x%02X%02X ", pc, code[0], code[1]);
+
+	switch (code[0] >> 4)
 	{
-		case 0x00: unimplementedInstruction(); break;
-		case 0x01: unimplementedInstruction(); break;
+		case 0x0: unimplementedInstruction(); break;
+		case 0x1: unimplementedInstruction(); break;
 		case 0x2: 
 		{
-			printf("yeet");
+			// CALL
+			sp++;
 			stack[sp] = pc;
-			++sp;
-			//pc = opcode & 0x0FFF;
+			pc = addr;
+			printf("pc 0x%X\n", pc);
 			break;
 		}
-		case 0x03: unimplementedInstruction(); break;
-		case 0x04: unimplementedInstruction(); break;
-		case 0x05: unimplementedInstruction(); break;
-		case 0x06: unimplementedInstruction(); break;
-		case 0x07: unimplementedInstruction(); break;
-		case 0x08: unimplementedInstruction(); break;
-		case 0x09: unimplementedInstruction(); break;
-		case 0x0a: unimplementedInstruction(); break;
-		case 0x0b: unimplementedInstruction(); break;
-		case 0x0c: unimplementedInstruction(); break;
-		case 0x0d: unimplementedInstruction(); break;
-		case 0x0e: unimplementedInstruction(); break;
-		case 0x0f: unimplementedInstruction(); break;
-		//default: printf("Unknown opcode: %X\n", opcode);
+		case 0x3: unimplementedInstruction(); break;
+		case 0x4: unimplementedInstruction(); break;
+		case 0x5: unimplementedInstruction(); break;
+		case 0x6: 
+		{
+			// LD
+			v[x] = kk;
+			printf("v[%X] == 0x%X\n", x, kk);
+			pc += 2;
+			break;
+		}
+		case 0x7: unimplementedInstruction(); break;
+		case 0x8: unimplementedInstruction(); break;
+		case 0x9: unimplementedInstruction(); break;
+		case 0xa: unimplementedInstruction(); break;
+		case 0xb: unimplementedInstruction(); break;
+		case 0xc: 
+		{
+			printf("here\n");
+			unimplementedInstruction(); break;
+		}
+		case 0xd: unimplementedInstruction(); break;
+		case 0xe: unimplementedInstruction(); break;
+		case 0xf: unimplementedInstruction(); break;
+		default: printf("Unknown opcode: %X\n", code[0] & 0xf);
 	}
+
+	// TODO
+	//pc += 1;
 }
 
 void chip8::unimplementedInstruction()

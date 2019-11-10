@@ -11,7 +11,7 @@ SOURCES = main.cpp chip8.cpp
 $(TARGET) : $(TARGET).o chip8.o
 	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).o chip8.o
 
-chip8: chip8.cpp chip8.h
+chip8.o: chip8.cpp chip8.h
 	$(CC) $(CFLAGS) -c chip8.cpp
 
 clean:

@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <string.h>
+#include <string.h> 
 #include <stdlib.h>
 #include <stdint.h>
 
@@ -21,6 +21,9 @@ public:
 	void printDisassembly ();
 	void init();
 	void loop();
+
+	// Member var
+	bool drawFlag;
 protected:
 private:
 	void p_addr(const char * call, uint8_t byte0, uint8_t byte1);
@@ -29,7 +32,7 @@ private:
 	void p_reg(const char * call, uint8_t byte);
 	int openROM();
 	int loadROM();
-	void disassemble();
+	void disassemble (uint8_t * code);
 	void unimplementedInstruction();
 	
 	// Member vars

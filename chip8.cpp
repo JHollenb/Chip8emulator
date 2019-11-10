@@ -1,6 +1,10 @@
 #include "chip8.h"
 
+// TODO: Move to header
+#define WIDTH 8
+
 chip8::chip8(const char * rom) :
+	drawFlag(false),
 	m_romPath(rom),
 	m_file(NULL),
 	m_fsize(0),
@@ -37,9 +41,8 @@ void chip8::p_reg(const char * call, uint8_t byte)
 	printf("%-10s V%01X", call, byte);
 }
 
-void chip8::disassemble ()
+void chip8::disassemble (uint8_t * code)
 {
-	uint8_t * code = &memory[pc];
 	uint8_t x = (code[0] & 0xf);
 	uint8_t y = (code[1] >> 4);
 	uint8_t n = (code[1] & 0xf);
@@ -118,6 +121,16 @@ void chip8::disassemble ()
 	}
 }
 
+void chip8::printDisassembly()
+{
+	while (pc < (m_fsize + OFFSET))
+	{
+		disassemble(&memory[pc]);
+		pc+=2;
+		printf("\n");
+	}
+}
+
 int chip8::openROM()
 {
 	int retval = SUCCESS;
@@ -162,16 +175,6 @@ int chip8::loadROM()
 	return retval;
 }
 
-void chip8::printDisassembly()
-{
-	while (pc < (m_fsize + OFFSET))
-	{
-		disassemble();
-		pc+=2;
-		printf("\n");
-	}
-}
-
 void chip8::init()
 {
 	// TODO: Makesure sizes align
@@ -181,6 +184,7 @@ void chip8::init()
 	sp = 0;
 	pc = OFFSET;
 
+	// TODO: init other arrays to 0
 	bzero(&stack, sizeof(stack));
 
 	// load ROM into memory at designated offset
@@ -192,64 +196,195 @@ void chip8::loop()
 	uint16_t opcode = memory[pc] << 8 | memory[pc + 1];
 	uint8_t * code = &memory[pc];
 
-	//uint8_t x = (opcode & 0x00F0) >> 8;
-	uint8_t x = (code[0] & 0xf);
-	uint8_t y = (code[1] >> 4);
-	uint8_t n = (code[1] & 0xf);
-	uint8_t kk = code[1];
+	uint8_t x = (code[0] & 0xf);	// (opcode & 0x0F00) >> 8
+	uint8_t y = (code[1] >> 4);		// (opcode & 0x00F0) >> 4
+	uint8_t n = (code[1] & 0xf);	// (opcode & 0x000F) 
+	uint8_t kk = code[1];			// (opcode & 0x00FF)
 	uint16_t addr = (x << 8 | kk);
 
-	printf("x: %X ", x);
-	printf("kk: %X\n ", kk);
-
-	printf("[DEBUG] pc: 0x%04X Opcode: 0x%02X%02X ", pc, code[0], code[1]);
+	disassemble(&memory[pc]);
+#ifdef DEBUG
+	printf(" [DEBUG] x: 0x%X ", x);
+	printf("y: 0x%X ", y);
+	printf("n: 0x%X ", n);
+	printf("kk: 0x%X ", kk);
+	printf("addr: 0x%X ", addr);
+#endif
 
 	switch (code[0] >> 4)
 	{
 		case 0x0: unimplementedInstruction(); break;
-		case 0x1: unimplementedInstruction(); break;
+		case 0x1:
+		{
+			// JP addr
+			pc = addr;
+			break;
+		}
 		case 0x2: 
 		{
-			// CALL
+			// CALL addr
 			sp++;
 			stack[sp] = pc;
 			pc = addr;
-			printf("pc 0x%X\n", pc);
 			break;
 		}
-		case 0x3: unimplementedInstruction(); break;
+		case 0x3:
+		{
+			// SE Vx, Byte
+			if (v[x] == kk)
+			{
+				pc += 2;
+			}
+			pc += 2;
+			break;
+		}
 		case 0x4: unimplementedInstruction(); break;
 		case 0x5: unimplementedInstruction(); break;
 		case 0x6: 
 		{
-			// LD
+			// LD Vx, byte
 			v[x] = kk;
-			printf("v[%X] == 0x%X\n", x, kk);
 			pc += 2;
 			break;
 		}
-		case 0x7: unimplementedInstruction(); break;
-		case 0x8: unimplementedInstruction(); break;
-		case 0x9: unimplementedInstruction(); break;
-		case 0xa: unimplementedInstruction(); break;
-		case 0xb: unimplementedInstruction(); break;
-		case 0xc: 
+		case 0x7:
 		{
-			printf("here\n");
-			unimplementedInstruction(); break;
+			// ADD Vx, byte
+			v[x] += kk;
+
+			// TODO: No mention of carry flag in this?
+			pc += 2;
+			break;
 		}
-		case 0xd: unimplementedInstruction(); break;
+		case 0x8: 
+		{
+			switch (kk & 0x0f)
+			{
+				case 0x0:
+				{
+					// LD Vx, Vy
+					v[x] = v[y];
+					break;
+				}
+				case 0x1:
+				{
+					// OR Vx, Vy
+					v[x] |= v[y];
+					break;
+				}
+				case 0x2:
+				{
+					// AND Vx, Vy
+					v[x] &= v[y];
+					break;
+				}
+				case 0x3:
+				{
+					// XOR Vx, Vy
+					v[x] ^= v[y];
+					break;
+				}
+				case 0x4: 
+				{
+					// ADD Vx, Vy
+					v[x] += v[y];
+
+					// Set carry flag if result is greater than 8 bits
+					v[0xf] = (v[x] + v[y] > 255);
+					break;
+				}
+				case 0x5:
+				{
+					// SUB Vx, Vy
+					v[x] = v[x] - v[y];
+
+					// TODO: Make sure interpretation is correct
+					// Set NOT borrow flag
+					v[0xf] = (v[x] > v[y]);
+					break;
+				}
+				case 0x6:
+				{
+					// SHR Vx {, Vy}
+					v[0xf] = (v[x] & 0x1);
+					v[x] = (v[x] >> 1);
+					break;
+				}
+				case 0x7:
+				{
+					// SUBN Vx, Vy
+					v[x] = v[y] - v[x];
+
+					// Set NOT borrow flag
+					v[0xf] = (v[y] > v[x]);
+					break;
+				}
+				case 0xe:
+				{
+					// SHL Vx {, Vy}
+					v[0xf] = (v[x] & 0x80); // TODO: Is 0x80 correct value?
+					v[x] = (v[x] << 1);
+					break;
+				}
+				default: printf("UNKNOWN 8"); break;
+			}
+			pc += 2;
+			break;
+		}
+		case 0x9: unimplementedInstruction(); break;
+		case 0xa:
+		{
+			// TODO: Verify this is correct
+			i = addr;
+			pc += 2;
+			break;
+		}
+		case 0xb: unimplementedInstruction(); break;
+		case 0xc: unimplementedInstruction(); break;
+		case 0xd:
+		{
+			// TODO: Can prob move this into a function
+			// Get coordinates from v-registers
+			uint8_t tmp_x = v[x];
+			uint8_t tmp_y = v[y];
+			uint8_t height = n;
+			uint8_t pixel = 0;
+
+			// v[0xf] is used a test for collisions.
+			v[0xf] = 0;
+			for (int yline = 0; yline < height; yline++)
+			{
+				pixel = memory[i + yline];
+				for (int xline = 0; xline < WIDTH; xline++)
+				{
+					// Scan each bit, check for a one
+					if ((pixel & (0x80 >> xline)) != 0)
+					{
+						// If any pixels changed from 1 to 0, set collision flag
+						if (screen[(x + xline + ((y + yline) * 64))] == 1)
+						{
+							v[0xf] = 1;
+						}
+
+						// Set pixel via XOR op
+						screen[x + xline + ((y + yline) * 64)] ^= 1;
+					}
+				}
+			}
+
+			drawFlag = true;
+			pc += 2;
+			break;
+		}
 		case 0xe: unimplementedInstruction(); break;
 		case 0xf: unimplementedInstruction(); break;
 		default: printf("Unknown opcode: %X\n", code[0] & 0xf);
 	}
-
-	// TODO
-	//pc += 1;
+	printf("\n");
 }
 
 void chip8::unimplementedInstruction()
 {
 	uint16_t opcode = memory[pc] << 8 | memory[pc + 1];
-	printf("[DEBUG] Unimplemented instruction: %x\n", opcode);
+	printf("\t - Unimplemented instruction: %x", opcode);
 }

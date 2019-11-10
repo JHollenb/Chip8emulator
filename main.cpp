@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include "chip8.h"
 
+#define EMULATOR
+
 int main (int argc, char ** argv)
 {
 	// TODO: set up graphics
@@ -11,13 +13,16 @@ int main (int argc, char ** argv)
 	// Initialize chip8 and load ROM into memory
 	chip8 myChip(argv[1]);
 	myChip.init();
-    //myChip.printDisassembly();
 
-	int iter = 5;
+#ifdef EMULATOR
+	int iter = 15;
 	for (int i = 0 ; i < iter; ++i)
 	{
 		myChip.loop();
 	}
+#else
+    myChip.printDisassembly();
+#endif
 
 	//while (1)
 	//{

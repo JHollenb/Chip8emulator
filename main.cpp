@@ -15,7 +15,7 @@ int main (int argc, char ** argv)
 	myChip.init();
 
 #ifdef EMULATOR
-	int iter = 15;
+	int iter = 500;
 	for (int i = 0 ; i < iter; ++i)
 	{
 		myChip.loop();

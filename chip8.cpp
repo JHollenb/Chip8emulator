@@ -28,7 +28,7 @@ void chip8::p_addr(const char * call, uint8_t byte0, uint8_t byte1)
 
 void chip8::p_reg_byte(const char * call, uint8_t byte0, uint8_t byte1)
 {
-	printf("%-10s V%01X,#%02x", call, byte0, byte1);
+	printf("%-10s V%01X,$%02x", call, byte0, byte1);
 }
 
 void chip8::p_reg_reg(const char * call, uint8_t byte0, uint8_t byte1)
@@ -93,7 +93,7 @@ void chip8::disassemble (uint8_t * code)
 		case 0xa: p_addr("LD I", x, kk); break;
 		case 0xb: p_addr("JUMP V0", x, kk); break;
 		case 0xc: p_reg_byte("RND", x, kk); break;
-		case 0xd: printf("%-10s V%01X,V%01X,#%01x", "SPRITE", x, y, n); break;
+		case 0xd: printf("%-10s V%01X,V%01X,$%01x", "SPRITE", x, y, n); break;
 		case 0xe: 
 			switch (kk)
 			{
@@ -203,6 +203,7 @@ void chip8::loop()
 	uint16_t addr = (x << 8 | kk);
 
 	disassemble(&memory[pc]);
+//#define DEBUG
 #ifdef DEBUG
 	printf(" [DEBUG] x: 0x%X ", x);
 	printf("y: 0x%X ", y);
@@ -213,7 +214,28 @@ void chip8::loop()
 
 	switch (code[0] >> 4)
 	{
-		case 0x0: unimplementedInstruction(); break;
+		case 0x0: 
+		{
+			switch (kk)
+			{
+				case 0xe0: unimplementedInstruction(); break;
+				case 0xee:
+				{
+					// RET
+					pc = stack[sp];
+					--sp;
+					break;
+				}
+				default:
+				{
+					// TODO "This instruction is ignored by modern interpreters"
+					// SYS addr
+					pc = addr;
+					break;
+				}
+			}
+			break;
+		}
 		case 0x1:
 		{
 			// JP addr
@@ -223,8 +245,8 @@ void chip8::loop()
 		case 0x2: 
 		{
 			// CALL addr
-			sp++;
 			stack[sp] = pc;
+			sp++;
 			pc = addr;
 			break;
 		}
@@ -328,6 +350,7 @@ void chip8::loop()
 				}
 				default: printf("UNKNOWN 8"); break;
 			}
+			printf("HIT PC!\n");
 			pc += 2;
 			break;
 		}

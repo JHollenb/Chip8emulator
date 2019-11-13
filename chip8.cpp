@@ -1,7 +1,28 @@
 #include "chip8.h"
+#include <cstdlib>
 
 // TODO: Move to header
 #define WIDTH 8
+
+uint8_t chip8_fontset[80] =
+{
+  0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+  0x20, 0x60, 0x20, 0x20, 0x70, // 1
+  0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+  0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+  0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+  0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+  0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+  0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+  0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+  0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+  0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+  0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+  0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+  0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+  0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+  0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+};
 
 chip8::chip8(const char * rom) :
 	drawFlag(false),
@@ -23,22 +44,22 @@ chip8::chip8(const char * rom) :
 
 void chip8::p_addr(const char * call, uint8_t byte0, uint8_t byte1)
 {
-	printf("%-10s $%01x%02x", call, byte0, byte1);
+	printf("%-10s 0x%01x%02x", call, byte0, byte1);
 }
 
 void chip8::p_reg_byte(const char * call, uint8_t byte0, uint8_t byte1)
 {
-	printf("%-10s V%01X,$%02x", call, byte0, byte1);
+	printf("%-10s $V%01X,0x%02x", call, byte0, byte1);
 }
 
 void chip8::p_reg_reg(const char * call, uint8_t byte0, uint8_t byte1)
 {
-	printf("%-10s V%01X,V%01X", call, byte0, byte1);
+	printf("%-10s $V%01X,$V%01X", call, byte0, byte1);
 }
 
 void chip8::p_reg(const char * call, uint8_t byte)
 {
-	printf("%-10s V%01X", call, byte);
+	printf("%-10s $V%01X", call, byte);
 }
 
 void chip8::disassemble (uint8_t * code)
@@ -57,7 +78,7 @@ void chip8::disassemble (uint8_t * code)
 			switch (kk)
 			{
 				case 0xe0: printf("%-10s", "CLS"); break;
-				case 0xee: printf("%-10s", "RTS"); break;
+				case 0xee: printf("%-10s", "RET"); break;
 				default: p_addr("SYS", x, kk); break;
 			}
 			break;
@@ -86,7 +107,7 @@ void chip8::disassemble (uint8_t * code)
 				case 0x6: p_reg_reg("SHR", x, y); break;
 				case 0x7: printf("%-10s V%01X,V%01X,V%01X", "SUB", x, y, y); break;
 				case 0xe: p_reg_reg("SHL", x, y); break;
-				default: printf("UNKNOWN 8"); break;
+				default: printf(" UNKNOWN 8"); break;
 			}
 			break;
 		case 0x9: p_reg_reg("SNE", x, y); break;
@@ -97,9 +118,9 @@ void chip8::disassemble (uint8_t * code)
 		case 0xe: 
 			switch (kk)
 			{
-				case 0xa2: p_reg("SKP", x); break;
+				case 0x9e: p_reg("SKP", x); break;
 				case 0xa1: p_reg("SKNP", x); break;
-				default: printf("UNKNOWN E"); break;
+				default: printf(" UNKNOWN E"); break;
 			}
 			break;
 		case 0xf: 
@@ -114,7 +135,7 @@ void chip8::disassemble (uint8_t * code)
 				case 0x33: printf("%-10s (I),V%01X", "MOVBCD", x); break;
 				case 0x55: printf("%-10s (I),V0-V%01X", "MOVM", x); break;
 				case 0x65: printf("%-10s V0-V%01X,(I)", "MOVM", x); break;
-				default: printf("UNKNOWN F"); break;
+				default: printf(" UNKNOWN F"); break;
 			}
 			break;
 		default: printf("Not implemented");
@@ -181,11 +202,22 @@ void chip8::init()
 	//memory = (uint8_t *)calloc (1024 * 4, 1);
 	//screen = &memory[0xf00];
 	//sp = 0xfa0;
-	sp = 0;
 	pc = OFFSET;
+	sp = 0;
+	i = 0;
 
-	// TODO: init other arrays to 0
+	bzero(&v, sizeof(v));
 	bzero(&stack, sizeof(stack));
+	bzero(&screen, sizeof(screen));
+	bzero(&key, sizeof(key));
+
+	for (int i = 0; i < 80; ++i)
+	{
+		memory[i] = chip8_fontset[i];
+	}
+
+	delay = 0;
+	sound = 0;
 
 	// load ROM into memory at designated offset
 	loadROM();
@@ -193,7 +225,6 @@ void chip8::init()
 
 void chip8::loop()
 {
-	uint16_t opcode = memory[pc] << 8 | memory[pc + 1];
 	uint8_t * code = &memory[pc];
 
 	uint8_t x = (code[0] & 0xf);	// (opcode & 0x0F00) >> 8
@@ -205,11 +236,13 @@ void chip8::loop()
 	disassemble(&memory[pc]);
 //#define DEBUG
 #ifdef DEBUG
+	uint16_t opcode = memory[pc] << 8 | memory[pc + 1];
 	printf(" [DEBUG] x: 0x%X ", x);
 	printf("y: 0x%X ", y);
 	printf("n: 0x%X ", n);
 	printf("kk: 0x%X ", kk);
 	printf("addr: 0x%X ", addr);
+	printf("opcode: 0x%x", opcode);
 #endif
 
 	switch (code[0] >> 4)
@@ -222,8 +255,9 @@ void chip8::loop()
 				case 0xee:
 				{
 					// RET
-					pc = stack[sp];
 					--sp;
+					pc = stack[sp];
+					pc += 2;
 					break;
 				}
 				default:
@@ -260,8 +294,26 @@ void chip8::loop()
 			pc += 2;
 			break;
 		}
-		case 0x4: unimplementedInstruction(); break;
+		case 0x4: 
+		{
+			// SNE Vx, byte
+			if (v[x] != kk)
+			{
+				pc += 2;
+			}
+			pc += 2;
+			break;
+		}
 		case 0x5: unimplementedInstruction(); break;
+		{
+			// SE Vx, Vy
+			if (v[x] == v[y])
+			{
+				pc += 2;
+			}
+			pc += 2;
+			break;
+		}
 		case 0x6: 
 		{
 			// LD Vx, byte
@@ -350,7 +402,6 @@ void chip8::loop()
 				}
 				default: printf("UNKNOWN 8"); break;
 			}
-			printf("HIT PC!\n");
 			pc += 2;
 			break;
 		}
@@ -363,7 +414,13 @@ void chip8::loop()
 			break;
 		}
 		case 0xb: unimplementedInstruction(); break;
-		case 0xc: unimplementedInstruction(); break;
+		case 0xc:
+		{
+			// RND Vx, byte
+			v[x] = (kk & (rand() % 0xFF));
+			pc += 2;
+			break;
+		}
 		case 0xd:
 		{
 			// TODO: Can prob move this into a function
@@ -384,13 +441,13 @@ void chip8::loop()
 					if ((pixel & (0x80 >> xline)) != 0)
 					{
 						// If any pixels changed from 1 to 0, set collision flag
-						if (screen[(x + xline + ((y + yline) * 64))] == 1)
+						if (screen[(tmp_x + xline + ((tmp_y + yline) * 64))] == 1)
 						{
 							v[0xf] = 1;
 						}
 
 						// Set pixel via XOR op
-						screen[x + xline + ((y + yline) * 64)] ^= 1;
+						screen[tmp_x + xline + ((tmp_y + yline) * 64)] ^= 1;
 					}
 				}
 			}
@@ -399,11 +456,103 @@ void chip8::loop()
 			pc += 2;
 			break;
 		}
-		case 0xe: unimplementedInstruction(); break;
-		case 0xf: unimplementedInstruction(); break;
+		case 0xe: 
+		{
+			switch (kk)
+			{
+				case 0x9e:
+				{
+					// SKP Vx
+					if (key[x] != 0)
+					{
+						pc+= 2;
+					}
+					break;
+				}
+				case 0xa1:
+				{
+					// SKNP Vx
+					if (key[x] == 0)
+					{
+						pc+= 2;
+					}
+					break;
+				}
+				default: printf(" UNKNOWN E"); break;
+			}
+			pc += 2;
+			break;
+		}
+		case 0xf:
+		{
+			switch (kk)
+			{
+				case 0x07:
+				{
+					// LD Vx, DT
+					v[x] = delay;
+					break;
+				}
+				//case 0x0a: printf("%-10s V%01X", "KEY", x); break;
+				case 0x15:
+				{
+					// LD DT, Vx
+					delay = v[x];
+					break;
+				}
+				case 0x18:
+				{
+					// LD ST, Vx
+					sound = v[x];
+					break;
+				}
+				//case 0x1e: printf("%-10s I,V%01X", "ADI", x); break;
+				case 0x29:
+				{	
+					i = v[x] * 0x5;
+					break;
+				}
+				case 0x33: 
+				{
+					// LD B, Vx
+					memory[i] = v[x] / 100;
+					memory[i + 1] = (v[x] / 10) % 10;;
+					memory[i + 2] = (v[x] % 100) % 10;
+					break;
+				}
+				//case 0x55: printf("%-10s (I),V0-V%01X", "MOVM", x); break;
+				case 0x65:
+				{
+					for (uint8_t iter = 0; iter <= x; ++iter)
+					{
+						v[iter] = memory[i + iter];
+					}
+					i += (x + 1);
+					break;
+				}
+				default: printf("UNKNOWN F"); break;
+			}
+			pc += 2;
+			break;
+		}
 		default: printf("Unknown opcode: %X\n", code[0] & 0xf);
 	}
 	printf("\n");
+
+	// Update timers
+	if (delay > 0)
+	{
+		--delay;
+	}
+
+	if (sound > 0)
+	{
+		if (sound == 1)
+		{
+			printf("BEEP!\n");
+		}
+		--sound;
+	}
 }
 
 void chip8::unimplementedInstruction()

@@ -12,15 +12,13 @@
 class chip8
 {
 public:
-	typedef struct chipStates
-	{
-	} chipStates;
-
 	chip8(const char * rom);
 	~chip8(){};
-	void printDisassembly ();
+	void printDisassembly();
 	void init();
 	void loop();
+	void drawGraphics();
+	void setKeys();
 
 	// Member var
 	bool drawFlag;

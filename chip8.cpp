@@ -221,6 +221,9 @@ void chip8::init()
 
 	// load ROM into memory at designated offset
 	loadROM();
+
+	// TODO
+	drawFlag = true;
 }
 
 void chip8::loop()
@@ -251,7 +254,16 @@ void chip8::loop()
 		{
 			switch (kk)
 			{
-				case 0xe0: unimplementedInstruction(); break;
+				case 0xe0:
+				{
+					for (int idx = 0; idx < 2048; ++idx)
+					{
+						screen[idx] = 0x0;
+					}
+					drawFlag = true;
+					pc += 2;
+					break;
+				}
 				case 0xee:
 				{
 					// RET
@@ -493,7 +505,25 @@ void chip8::loop()
 					v[x] = delay;
 					break;
 				}
-				//case 0x0a: printf("%-10s V%01X", "KEY", x); break;
+				case 0x0a:
+				{
+					bool keyPress = false;
+
+					for (int idx = 0; idx < 16; ++idx)
+					{
+						if (key[idx] != 0)
+						{
+							v[x] = idx;
+							keyPress = true;
+						}
+					}
+
+					if (!keyPress)
+					{
+						return;
+					}
+					break;
+				}
 				case 0x15:
 				{
 					// LD DT, Vx
@@ -506,7 +536,6 @@ void chip8::loop()
 					sound = v[x];
 					break;
 				}
-				//case 0x1e: printf("%-10s I,V%01X", "ADI", x); break;
 				case 0x29:
 				{	
 					i = v[x] * 0x5;

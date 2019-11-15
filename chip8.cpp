@@ -42,6 +42,24 @@ chip8::chip8(const char * rom) :
 {
 }
 
+chip8::chip8() :
+	drawFlag(false),
+	m_romPath(NULL),
+	m_file(NULL),
+	m_fsize(0),
+	v(),
+	i(0),
+	pc(0),
+	delay(0),
+	sound(0),
+	memory(),
+	screen(),
+	sp(0),
+	stack(),
+	key()
+{
+}
+
 void chip8::p_addr(const char * call, uint8_t byte0, uint8_t byte1)
 {
 	printf("%-10s 0x%01x%02x", call, byte0, byte1);
@@ -196,7 +214,7 @@ int chip8::loadROM()
 	return retval;
 }
 
-void chip8::init()
+void chip8::init(const char * rom)
 {
 	// TODO: Makesure sizes align
 	//memory = (uint8_t *)calloc (1024 * 4, 1);
@@ -220,6 +238,7 @@ void chip8::init()
 	sound = 0;
 
 	// load ROM into memory at designated offset
+	m_romPath = rom;
 	loadROM();
 
 	// TODO

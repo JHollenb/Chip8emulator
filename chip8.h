@@ -13,17 +13,17 @@ class chip8
 {
 public:
 	chip8(const char * rom);
+	chip8();
 	~chip8(){};
 	void printDisassembly();
-	void init();
+	//void init();
+	void init(const char * rom);
 	void loop();
 	void drawGraphics();
 	void setKeys();
 
 	// Member var
 	bool drawFlag;
-protected:
-private:
 	void p_addr(const char * call, uint8_t byte0, uint8_t byte1);
 	void p_reg_byte(const char * call, uint8_t byte0, uint8_t byte1);
 	void p_reg_reg(const char * call, uint8_t byte0, uint8_t byte1);
@@ -49,4 +49,6 @@ private:
 	uint16_t sp;			    // Stack pointer
 	uint16_t stack[16];			// 16 levels of stack
 	uint8_t key[16];			// Hex keypad 0x0 - 0xf
+protected:
+private:
 };

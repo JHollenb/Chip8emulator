@@ -1,230 +1,166 @@
-#include <string.h>
-#include <stdlib.h>
-#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <ncurses.h>
+#include <time.h>
 #include "chip8.h"
 
-#include <GLUT/glut.h>
+char pressedKey;
+chip8 myChip;
 
-#define SCREEN_WIDTH 64
-#define SCREEN_HEIGHT 32
+void clearGFXMemory();
+void outputGFXBuffer();
+int kbhit();
+void unsetKeys();
+void handleKeyboardInput();
 
-int modifier = 10;
 
-int display_width = SCREEN_WIDTH * modifier;
-int display_height = SCREEN_HEIGHT * modifier;
-
-void display();
-void reshape_window(GLsizei w, GLsizei h);
-void keyboardUp(unsigned char key, int x, int y);
-void keyboardDown(unsigned char key, int x, int y);
-
-#define DRAWWITHTEXTURE
-typedef int8_t u8;
-
-u8 screenData[SCREEN_HEIGHT][SCREEN_WIDTH][3];
-void setupTexture();
-
-#define EMULATOR
-
-chip8 myChip8;
-
-int main (int argc, char ** argv)
+int main(int argc, char **argv)
 {
-	// TODO: set up graphics
-	// TODO: set up input
 
-	// Initialize chip8 and load ROM into memory
-	myChip8.init(argv[1]);
-
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
-
-
-	glutInitWindowSize(display_width, display_height);
-    glutInitWindowPosition(320, 320);
-	glutCreateWindow("myChip8");
-
-	glutDisplayFunc(display);
-	glutIdleFunc(display);
-    glutReshapeFunc(reshape_window);
-	glutKeyboardFunc(keyboardDown);
-	glutKeyboardUpFunc(keyboardUp);
-
-#ifdef EMULATOR
-	//int iter = 2000;
-	//for (int i = 0 ; i < iter; ++i)
-	//while(1)
-	//{
-//		myChip.loop();
-//	}
-#else
- //   myChip.printDisassembly();
-#endif
-
-	//while (1)
-	//{
-		// loop one cycle
-		//myChip.loop();
-
-		// TODO: update graphics
-		// TODO: update key press state
-	//}
-
-	return 0;
-}
-
-// Setup Texture
-void setupTexture()
-{
-	// Clear screen
-	for(int y = 0; y < SCREEN_HEIGHT; ++y)
-		for(int x = 0; x < SCREEN_WIDTH; ++x)
-			screenData[y][x][0] = screenData[y][x][1] = screenData[y][x][2] = 0;
-
-	// Create a texture
-	glTexImage2D(GL_TEXTURE_2D, 0, 3, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)screenData);
-
-	// Set up the texture
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-
-	// Enable textures
-	glEnable(GL_TEXTURE_2D);
-}
-
-void updateTexture(const chip8& c8)
-{
-	// Update pixels
-	for(int y = 0; y < 32; ++y)
-		for(int x = 0; x < 64; ++x)
-			if(c8.screen[(y * 64) + x] == 0)
-				screenData[y][x][0] = screenData[y][x][1] = screenData[y][x][2] = 0;	// Disabled
-			else
-				screenData[y][x][0] = screenData[y][x][1] = screenData[y][x][2] = 255;  // Enabled
-
-	// Update Texture
-	glTexSubImage2D(GL_TEXTURE_2D, 0 ,0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)screenData);
-
-	glBegin( GL_QUADS );
-		glTexCoord2d(0.0, 0.0);		glVertex2d(0.0,			  0.0);
-		glTexCoord2d(1.0, 0.0); 	glVertex2d(display_width, 0.0);
-		glTexCoord2d(1.0, 1.0); 	glVertex2d(display_width, display_height);
-		glTexCoord2d(0.0, 1.0); 	glVertex2d(0.0,			  display_height);
-	glEnd();
-}
-
-// Old screen code
-void drawPixel(int x, int y)
-{
-	glBegin(GL_QUADS);
-		glVertex3f((x * modifier) + 0.0f,     (y * modifier) + 0.0f,	 0.0f);
-		glVertex3f((x * modifier) + 0.0f,     (y * modifier) + modifier, 0.0f);
-		glVertex3f((x * modifier) + modifier, (y * modifier) + modifier, 0.0f);
-		glVertex3f((x * modifier) + modifier, (y * modifier) + 0.0f,	 0.0f);
-	glEnd();
-}
-
-void updateQuads(const chip8& c8)
-{
-	// Draw
-	for(int y = 0; y < 32; ++y)
-		for(int x = 0; x < 64; ++x)
-		{
-			if(c8.screen[(y*64) + x] == 0)
-				glColor3f(0.0f,0.0f,0.0f);
-			else
-				glColor3f(1.0f,1.0f,1.0f);
-
-			drawPixel(x, y);
-		}
-}
-
-void display()
-{
-	myChip8.loop();
-
-	if(myChip8.drawFlag)
+	if(argc < 2)
 	{
-		// Clear framebuffer
-		glClear(GL_COLOR_BUFFER_BIT);
+		printf("How to use: ./emu8 chip8application\n\n");
+		return 1;
+	}
 
-#ifdef DRAWWITHTEXTURE
-		updateTexture(myChip8);
-#else
-		updateQuads(myChip8);
-#endif
-		// Swap buffers!
-		glutSwapBuffers();
 
-		// Processed frame
-		myChip8.drawFlag = false;
+	initscr();
+	myChip.init(argv[1]);
+    clearGFXMemory();
+	nodelay(stdscr, TRUE);	
+	cbreak();
+	noecho();	
+	while(1) // main loop
+	{
+
+		pressedKey = getch();
+		handleKeyboardInput();
+		myChip.loop();
+		if(myChip.drawFlag)
+			outputGFXBuffer();
+		refresh();	
+		usleep(2200);
+		if(kbhit())
+			unsetKeys();
+	}
+	getch();
+	endwin();
+
+ return 0;
+}
+
+
+void clearGFXMemory()
+{
+	for(int i = 0; i < 2048; ++i)
+	{	
+		myChip.screen[i] = 0;
 	}
 }
 
-void reshape_window(GLsizei w, GLsizei h)
+void outputGFXBuffer()
 {
-	glClearColor(0.0f, 0.0f, 0.5f, 0.0f);
-	glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluOrtho2D(0, w, h, 0);
-    glMatrixMode(GL_MODELVIEW);
-    glViewport(0, 0, w, h);
+	int y = 0;
+	int x = 0;
 
-	// Resize quad
-	display_width = w;
-	display_height = h;
+		for(y = 0; y < 32; y++)
+		{
+			for(x = 0; x < 64; x++)
+			{
+				move(y,x);
+
+				if(myChip.screen[x + (y * 64)])
+				{
+					attron(A_REVERSE);
+					printw(" ");
+					attroff(A_REVERSE);
+				}else{
+					printw(" ");
+				}
+			}
+		}
 }
 
-void keyboardDown(unsigned char key, int x, int y)
+
+int kbhit(void)
 {
-	if(key == 27)    // esc
-		exit(0);
+    int ch = getch();
 
-	if(key == '1')		myChip8.key[0x1] = 1;
-	else if(key == '2')	myChip8.key[0x2] = 1;
-	else if(key == '3')	myChip8.key[0x3] = 1;
-	else if(key == '4')	myChip8.key[0xC] = 1;
-
-	else if(key == 'q')	myChip8.key[0x4] = 1;
-	else if(key == 'w')	myChip8.key[0x5] = 1;
-	else if(key == 'e')	myChip8.key[0x6] = 1;
-	else if(key == 'r')	myChip8.key[0xD] = 1;
-
-	else if(key == 'a')	myChip8.key[0x7] = 1;
-	else if(key == 's')	myChip8.key[0x8] = 1;
-	else if(key == 'd')	myChip8.key[0x9] = 1;
-	else if(key == 'f')	myChip8.key[0xE] = 1;
-
-	else if(key == 'z')	myChip8.key[0xA] = 1;
-	else if(key == 'x')	myChip8.key[0x0] = 1;
-	else if(key == 'c')	myChip8.key[0xB] = 1;
-	else if(key == 'v')	myChip8.key[0xF] = 1;
-
-	//printf("Press key %c\n", key);
+    if (ch != ERR) {
+        ungetch(ch);
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
-void keyboardUp(unsigned char key, int x, int y)
+void unsetKeys()
 {
-	if(key == '1')		myChip8.key[0x1] = 0;
-	else if(key == '2')	myChip8.key[0x2] = 0;
-	else if(key == '3')	myChip8.key[0x3] = 0;
-	else if(key == '4')	myChip8.key[0xC] = 0;
+	int k;
 
-	else if(key == 'q')	myChip8.key[0x4] = 0;
-	else if(key == 'w')	myChip8.key[0x5] = 0;
-	else if(key == 'e')	myChip8.key[0x6] = 0;
-	else if(key == 'r')	myChip8.key[0xD] = 0;
+	for(k = 0; k < 16; k++)
+	{
+		myChip.key[k] = 0;
+	}
 
-	else if(key == 'a')	myChip8.key[0x7] = 0;
-	else if(key == 's')	myChip8.key[0x8] = 0;
-	else if(key == 'd')	myChip8.key[0x9] = 0;
-	else if(key == 'f')	myChip8.key[0xE] = 0;
+}
 
-	else if(key == 'z')	myChip8.key[0xA] = 0;
-	else if(key == 'x')	myChip8.key[0x0] = 0;
-	else if(key == 'c')	myChip8.key[0xB] = 0;
-	else if(key == 'v')	myChip8.key[0xF] = 0;
+void handleKeyboardInput()
+{
+	switch(pressedKey)
+	{
+		case 49:
+			myChip.key[0] = 1;		
+			break;	
+		case 50:
+			myChip.key[1] = 1;
+			break;
+		case 51:
+			myChip.key[2] = 1;
+			break;
+		case 52:
+			myChip.key[3] = 1;
+			break;
+		case 113:
+			myChip.key[4] = 1;		
+			break;
+		case 119:
+			myChip.key[5] = 1;		
+			break;
+		case 101:
+			myChip.key[6] = 1;		
+			break;
+		case 114:
+			myChip.key[7] = 1;		
+			break;
+		case 97:
+			myChip.key[8] = 1;		
+			break;
+		case 115:
+			myChip.key[9] = 1;		
+			break;
+		case 100:
+			myChip.key[10] = 1;		
+			break;
+		case 102:
+			myChip.key[11] = 1;		
+			break;
+		case 121:
+			myChip.key[12] = 1;		
+			break;
+		case 120:
+			myChip.key[13] = 1;		
+			break;
+		case 99:
+			myChip.key[14] = 1;		
+			break;
+		case 118:
+			myChip.key[15] = 1;		
+			break;
+		
+		default:
+			break;
+	}
+
 }

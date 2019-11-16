@@ -255,7 +255,7 @@ void chip8::loop()
 	uint8_t kk = code[1];			// (opcode & 0x00FF)
 	uint16_t addr = (x << 8 | kk);
 
-	disassemble(&memory[pc]);
+	//disassemble(&memory[pc]);
 //#define DEBUG
 #ifdef DEBUG
 	uint16_t opcode = memory[pc] << 8 | memory[pc + 1];

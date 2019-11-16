@@ -8,6 +8,7 @@
 
 #define SCREEN_WIDTH 64
 #define SCREEN_HEIGHT 32
+//#define DRAWWITHTEXTURE
 
 int modifier = 10;
 
@@ -31,15 +32,11 @@ chip8 myChip8;
 
 int main (int argc, char ** argv)
 {
-	// TODO: set up graphics
-	// TODO: set up input
-
 	// Initialize chip8 and load ROM into memory
 	myChip8.init(argv[1]);
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
-
 
 	glutInitWindowSize(display_width, display_height);
     glutInitWindowPosition(320, 320);
@@ -50,26 +47,11 @@ int main (int argc, char ** argv)
     glutReshapeFunc(reshape_window);
 	glutKeyboardFunc(keyboardDown);
 	glutKeyboardUpFunc(keyboardUp);
+#ifdef DRAWWITHTEXTURE
+	setupTexture();			
+#endif	
 
-#ifdef EMULATOR
-	//int iter = 2000;
-	//for (int i = 0 ; i < iter; ++i)
-	//while(1)
-	//{
-//		myChip.loop();
-//	}
-#else
- //   myChip.printDisassembly();
-#endif
-
-	//while (1)
-	//{
-		// loop one cycle
-		//myChip.loop();
-
-		// TODO: update graphics
-		// TODO: update key press state
-	//}
+	glutMainLoop(); 
 
 	return 0;
 }
@@ -95,7 +77,7 @@ void setupTexture()
 	glEnable(GL_TEXTURE_2D);
 }
 
-void updateTexture(const chip8& c8)
+void updateTexture(const chip8 & c8)
 {
 	// Update pixels
 	for(int y = 0; y < 32; ++y)
@@ -183,10 +165,10 @@ void keyboardDown(unsigned char key, int x, int y)
 	if(key == 27)    // esc
 		exit(0);
 
-	if(key == '1')		myChip8.key[0x1] = 1;
-	else if(key == '2')	myChip8.key[0x2] = 1;
-	else if(key == '3')	myChip8.key[0x3] = 1;
-	else if(key == '4')	myChip8.key[0xC] = 1;
+	if(key == 0x12)		myChip8.key[0x1] = 1;
+	else if(key == 0x13)	myChip8.key[0x2] = 1;
+	else if(key == 0x14)	myChip8.key[0x3] = 1;
+	else if(key == 0x15)	myChip8.key[0xC] = 1;
 
 	else if(key == 'q')	myChip8.key[0x4] = 1;
 	else if(key == 'w')	myChip8.key[0x5] = 1;
@@ -203,15 +185,15 @@ void keyboardDown(unsigned char key, int x, int y)
 	else if(key == 'c')	myChip8.key[0xB] = 1;
 	else if(key == 'v')	myChip8.key[0xF] = 1;
 
-	//printf("Press key %c\n", key);
+	printf("Press key %c\n", key);
 }
 
 void keyboardUp(unsigned char key, int x, int y)
 {
-	if(key == '1')		myChip8.key[0x1] = 0;
-	else if(key == '2')	myChip8.key[0x2] = 0;
-	else if(key == '3')	myChip8.key[0x3] = 0;
-	else if(key == '4')	myChip8.key[0xC] = 0;
+	if(key == 49)		myChip8.key[0x1] = 0;
+	else if(key == 50)	myChip8.key[0x2] = 0;
+	else if(key == 51)	myChip8.key[0x3] = 0;
+	else if(key == 52)	myChip8.key[0xC] = 0;
 
 	else if(key == 'q')	myChip8.key[0x4] = 0;
 	else if(key == 'w')	myChip8.key[0x5] = 0;

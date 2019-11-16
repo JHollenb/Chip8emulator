@@ -165,7 +165,7 @@ void chip8::printDisassembly()
 	while (pc < (m_fsize + OFFSET))
 	{
 		disassemble(&memory[pc]);
-		pc+=2;
+		pc += 2;
 		printf("\n");
 	}
 }
@@ -255,7 +255,7 @@ void chip8::loop()
 	uint8_t kk = code[1];			// (opcode & 0x00FF)
 	uint16_t addr = (x << 8 | kk);
 
-	disassemble(&memory[pc]);
+	//disassemble(&memory[pc]);
 //#define DEBUG
 #ifdef DEBUG
 	uint16_t opcode = memory[pc] << 8 | memory[pc + 1];
@@ -439,7 +439,6 @@ void chip8::loop()
 		case 0x9: unimplementedInstruction(); break;
 		case 0xa:
 		{
-			// TODO: Verify this is correct
 			i = addr;
 			pc += 2;
 			break;
@@ -585,7 +584,7 @@ void chip8::loop()
 		}
 		default: printf("Unknown opcode: %X\n", code[0] & 0xf);
 	}
-	printf("\n");
+	//printf("\n");
 
 	// Update timers
 	if (delay > 0)

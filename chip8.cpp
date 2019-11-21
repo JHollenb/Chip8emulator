@@ -217,9 +217,6 @@ int chip8::loadROM()
 void chip8::init(const char * rom)
 {
 	// TODO: Makesure sizes align
-	//memory = (uint8_t *)calloc (1024 * 4, 1);
-	//screen = &memory[0xf00];
-	//sp = 0xfa0;
 	pc = OFFSET;
 	sp = 0;
 	i = 0;
@@ -493,7 +490,7 @@ void chip8::loop()
 				case 0x9e:
 				{
 					// SKP Vx
-					if (key[x] != 0)
+					if (key[v[x]] != 0)
 					{
 						pc+= 2;
 					}
@@ -502,7 +499,7 @@ void chip8::loop()
 				case 0xa1:
 				{
 					// SKNP Vx
-					if (key[x] == 0)
+					if (key[v[x]] == 0)
 					{
 						pc+= 2;
 					}

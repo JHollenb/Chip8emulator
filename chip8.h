@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#define SCREEN_WIDTH 64
+#define SCREEN_HEIGHT 32
 #define OFFSET 0x200
 #define SUCCESS 0
 #define ERROR -1
@@ -45,7 +47,7 @@ public:
 	uint8_t delay;				// delay timer @ 60Hz
 	uint8_t sound;				// sound timer @ 60Hz
 	uint8_t memory[4096];		// Chip8 has 4k memory
-	uint8_t screen[64 * 32];	// Graphics array (screen is 64 x 32)
+	uint8_t screen[SCREEN_WIDTH * SCREEN_HEIGHT];	// Graphics array (screen is 64 x 32)
 	uint16_t sp;			    // Stack pointer
 	uint16_t stack[16];			// 16 levels of stack
 	uint8_t key[16];			// Hex keypad 0x0 - 0xf

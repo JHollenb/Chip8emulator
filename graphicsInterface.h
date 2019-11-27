@@ -18,6 +18,11 @@ public:
 
 protected:
 private:
+	void setupDisplayCallback();
+	void setupIdleCallback();
+	void setupReshapeWindowCallback();
+	void setupKeyboardCallback();
+
 	const char * m_name;
 	int m_modifier;
 	int m_display_width;

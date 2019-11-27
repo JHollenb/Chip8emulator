@@ -125,7 +125,7 @@ void chip8::disassemble (uint8_t * code)
 				case 0x6: p_reg_reg("SHR", x, y); break;
 				case 0x7: printf("%-10s V%01X,V%01X,V%01X", "SUB", x, y, y); break;
 				case 0xe: p_reg_reg("SHL", x, y); break;
-				default: printf(" UNKNOWN 8"); break;
+				default: printf(" UNKNOWN 8\n"); break;
 			}
 			break;
 		case 0x9: p_reg_reg("SNE", x, y); break;
@@ -138,7 +138,7 @@ void chip8::disassemble (uint8_t * code)
 			{
 				case 0x9e: p_reg("SKP", x); break;
 				case 0xa1: p_reg("SKNP", x); break;
-				default: printf(" UNKNOWN E"); break;
+				default: printf(" UNKNOWN E\n"); break;
 			}
 			break;
 		case 0xf: 
@@ -153,7 +153,7 @@ void chip8::disassemble (uint8_t * code)
 				case 0x33: printf("%-10s (I),V%01X", "MOVBCD", x); break;
 				case 0x55: printf("%-10s (I),V0-V%01X", "MOVM", x); break;
 				case 0x65: printf("%-10s V0-V%01X,(I)", "MOVM", x); break;
-				default: printf(" UNKNOWN F"); break;
+				default: printf(" UNKNOWN F\n"); break;
 			}
 			break;
 		default: printf("Not implemented");
@@ -428,7 +428,7 @@ void chip8::loop()
 					v[x] = (v[x] << 1);
 					break;
 				}
-				default: printf("UNKNOWN 8"); break;
+				default: printf("UNKNOWN 8\n"); break;
 			}
 			pc += 2;
 			break;
@@ -505,7 +505,7 @@ void chip8::loop()
 					}
 					break;
 				}
-				default: printf(" UNKNOWN E"); break;
+				default: printf(" UNKNOWN E\n"); break;
 			}
 			pc += 2;
 			break;
@@ -574,7 +574,7 @@ void chip8::loop()
 					i += (x + 1);
 					break;
 				}
-				default: printf("UNKNOWN F"); break;
+				default: printf("UNKNOWN F\n"); break;
 			}
 			pc += 2;
 			break;

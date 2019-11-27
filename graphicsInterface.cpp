@@ -1,5 +1,7 @@
 #include "graphicsInterface.h"
 
+static graphicsInterface * currentInstance = NULL;
+
 graphicsInterface::graphicsInterface(const char * name, int modifier): 
 	m_name(name),
 	m_modifier(modifier),
@@ -7,6 +9,71 @@ graphicsInterface::graphicsInterface(const char * name, int modifier):
 	m_display_height(SCREEN_HEIGHT * m_modifier),
 	m_emulator()
 {
+}
+
+static void displayCallback()
+{
+	if (currentInstance)
+	{
+		currentInstance->display();
+	}
+	else
+	{
+		printf("[ERROR] displayCallback::No currentInstance!\n");
+	}
+}
+
+static void reshapeWindowCallback()
+{
+	if (currentInstance)
+	{
+		GLsizei w;
+		GLsizei h;
+		currentInstance->reshape_window(w, h);
+	}
+	else
+	{
+		printf("[ERROR] reshapeWindowCallback::No currentInstance!\n");
+	}
+}
+
+static void keyboardCallback()
+{
+	if (currentInstance)
+	{
+		currentInstance->keyboardDown();
+		currentInstance->keyboardUp();
+	}
+	else
+	{
+		printf("[ERROR] keyboardCallback::No currentInstance!\n");
+	}
+}
+
+void graphicsInterface::setupDisplayCallback()
+{
+	currentInstance = this;
+	::glutDisplayFunc(grapicsInterface::displayCallback);
+}
+
+void graphicsInterface::setupIdleCallback()
+{
+	// TODO: This can be better
+	currentInstance = this;
+	::glutIdleFunc(graphicsInterface::displayCallback);
+}
+
+void graphicsInterface::setupReshapeWindowCallback()
+{
+	currentInstance = this;
+	::glutReshapeFunc(graphicsInterface::reshapeWindowCallback);
+}
+
+void graphicsInterface::setupKeyboardCallback()
+{
+	currentInstance = this;
+	::glutKeyboardFunc(graphicsInterface::keyboardCallback);
+	::glutKeyboardUpFunc(graphicsInterface::keyboardCallback);
 }
 
 void graphicsInterface::initGraphics(int * argc, char ** argv)
@@ -20,11 +87,10 @@ void graphicsInterface::initGraphics(int * argc, char ** argv)
     glutInitWindowPosition(320, 320);
 	glutCreateWindow(m_name);
 
-	glutDisplayFunc(&graphicsInterface::display);
-	glutIdleFunc(&graphicsInterface::display);
-    glutReshapeFunc(reshape_window);
-	glutKeyboardFunc(keyboardDown);
-	glutKeyboardUpFunc(keyboardUp);
+	setupDisplayCallback();
+	setupIdleCallback();
+	setupReshapeWindowCallback();
+	setupKeyboardCallback();
 
 #ifdef DRAWWITHTEXTURE
 	setupTexture();			

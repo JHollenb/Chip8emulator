@@ -42,7 +42,7 @@ public:
 
 	// States
 	uint8_t v[16];				// CPU registers
-	uint16_t i;					// Index register
+	uint16_t I;					// Index register
 	uint16_t pc;				// Program counter
 	uint8_t delay;				// delay timer @ 60Hz
 	uint8_t sound;				// sound timer @ 60Hz

@@ -1,4 +1,22 @@
 # Chip8emulator
+
+## To run:
+```
+cd chip8emulator/
+make
+./main ROMs/PONG2.ch8
+```
+
+Keys:
+```
+Left paddle:
+1 - up
+q - down
+
+Right paddle:
+4 - up
+r - down
+```
 ## Plan of Attack
 The first step will be to use the tutorial to get a prototype up and running. After that, I will clean it up and put it into C++ to make the tool more useable.
 

@@ -30,7 +30,7 @@ chip8::chip8(const char * rom) :
 	m_file(NULL),
 	m_fsize(0),
 	v(),
-	i(0),
+	I(0),
 	pc(0),
 	delay(0),
 	sound(0),
@@ -48,7 +48,7 @@ chip8::chip8() :
 	m_file(NULL),
 	m_fsize(0),
 	v(),
-	i(0),
+	I(0),
 	pc(0),
 	delay(0),
 	sound(0),
@@ -219,7 +219,7 @@ void chip8::init(const char * rom)
 	// TODO: Makesure sizes align
 	pc = OFFSET;
 	sp = 0;
-	i = 0;
+	I = 0;
 
 	bzero(&v, sizeof(v));
 	bzero(&stack, sizeof(stack));
@@ -332,7 +332,7 @@ void chip8::loop()
 			pc += 2;
 			break;
 		}
-		case 0x5: unimplementedInstruction(); break;
+		case 0x5: 
 		{
 			// SE Vx, Vy
 			if (v[x] == v[y])
@@ -353,8 +353,6 @@ void chip8::loop()
 		{
 			// ADD Vx, byte
 			v[x] += kk;
-
-			// TODO: No mention of carry flag in this?
 			pc += 2;
 			break;
 		}
@@ -433,14 +431,30 @@ void chip8::loop()
 			pc += 2;
 			break;
 		}
-		case 0x9: unimplementedInstruction(); break;
-		case 0xa:
+		case 0x9: 
 		{
-			i = addr;
+			// SNE Vx, Vy
+			if (v[x] != v[y])
+			{
+				pc += 2;
+			}
+
 			pc += 2;
 			break;
 		}
-		case 0xb: unimplementedInstruction(); break;
+		case 0xa:
+		{
+			// LD I, addr
+			I = addr;
+			pc += 2;
+			break;
+		}
+		case 0xb: 
+		{
+			// JP V0, addr
+			pc = v[0] + addr;
+			break;
+		}
 		case 0xc:
 		{
 			// RND Vx, byte
@@ -450,31 +464,26 @@ void chip8::loop()
 		}
 		case 0xd:
 		{
-			// TODO: Can prob move this into a function
-			// Get coordinates from v-registers
-			uint8_t tmp_x = v[x];
-			uint8_t tmp_y = v[y];
-			uint8_t height = n;
 			uint8_t pixel = 0;
 
 			// v[0xf] is used a test for collisions.
 			v[0xf] = 0;
-			for (int yline = 0; yline < height; yline++)
+			for (int yline = 0; yline < n; yline++)
 			{
-				pixel = memory[i + yline];
+				pixel = memory[I + yline];
 				for (int xline = 0; xline < WIDTH; xline++)
 				{
 					// Scan each bit, check for a one
 					if ((pixel & (0x80 >> xline)) != 0)
 					{
 						// If any pixels changed from 1 to 0, set collision flag
-						if (screen[(tmp_x + xline + ((tmp_y + yline) * 64))] == 1)
+						if (screen[(v[x] + xline + ((v[y] + yline) * SCREEN_WIDTH))] == 1)
 						{
 							v[0xf] = 1;
 						}
 
 						// Set pixel via XOR op
-						screen[tmp_x + xline + ((tmp_y + yline) * 64)] ^= 1;
+						screen[v[x] + xline + ((v[y] + yline) * SCREEN_WIDTH)] ^= 1;
 					}
 				}
 			}
@@ -551,27 +560,45 @@ void chip8::loop()
 					sound = v[x];
 					break;
 				}
+
+				case 0x1e:
+				{
+					v[0xf] = (I + v[x] > 0xfff);
+					I += v[x];
+					break;
+				}
+
 				case 0x29:
 				{	
-					i = v[x] * 0x5;
+					I = v[x] * 0x5;
 					break;
 				}
 				case 0x33: 
 				{
 					// LD B, Vx
-					memory[i] = v[x] / 100;
-					memory[i + 1] = (v[x] / 10) % 10;;
-					memory[i + 2] = (v[x] % 100) % 10;
+					memory[I] = v[x] / 100;
+					memory[I + 1] = (v[x] / 10) % 10;;
+					memory[I + 2] = (v[x] % 100) % 10;
 					break;
 				}
-				//case 0x55: printf("%-10s (I),V0-V%01X", "MOVM", x); break;
+				case 0x55: 
+				{
+					// LD I, Vx
+					for (uint8_t i = 0; i <= x; ++i)
+					{
+						memory[I + i] = v[i];
+					}
+					I += (x + 1);
+					break;
+				}
 				case 0x65:
 				{
-					for (uint8_t iter = 0; iter <= x; ++iter)
+					// LD Vx, I
+					for (uint8_t i = 0; i <= x; ++i)
 					{
-						v[iter] = memory[i + iter];
+						v[i] = memory[I + i];
 					}
-					i += (x + 1);
+					I += (x + 1);
 					break;
 				}
 				default: printf("UNKNOWN F\n"); break;
@@ -602,5 +629,5 @@ void chip8::loop()
 void chip8::unimplementedInstruction()
 {
 	uint16_t opcode = memory[pc] << 8 | memory[pc + 1];
-	printf("\t - Unimplemented instruction: %x", opcode);
+	printf("\t - Unimplemented instruction: %x\n", opcode);
 }

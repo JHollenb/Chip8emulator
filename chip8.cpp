@@ -2,9 +2,6 @@
 #include <cstdlib>
 #include <time.h>
 
-// TODO: Move to header
-#define WIDTH 8
-
 uint8_t chip8_fontset[80] =
 {
   0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -216,7 +213,6 @@ int chip8::loadROM()
 
 void chip8::init(const char * rom)
 {
-	// TODO: Makesure sizes align
 	pc = OFFSET;
 	sp = 0;
 	I = 0;
@@ -234,15 +230,12 @@ void chip8::init(const char * rom)
 
 	delay = 0;
 	sound = 0;
+	drawFlag = true;
+	srand(time(NULL));
 
 	// load ROM into memory at designated offset
 	m_romPath = rom;
 	loadROM();
-
-	// TODO
-	drawFlag = true;
-
-	srand(time(NULL));
 }
 
 void chip8::loop()
@@ -255,16 +248,8 @@ void chip8::loop()
 	uint8_t kk = code[1];			// (opcode & 0x00FF)
 	uint16_t addr = (x << 8 | kk);
 
-	disassemble(&memory[pc]);
-//#define DEBUG
 #ifdef DEBUG
-	uint16_t opcode = memory[pc] << 8 | memory[pc + 1];
-	printf(" [DEBUG] x: 0x%X ", x);
-	printf("y: 0x%X ", y);
-	printf("n: 0x%X ", n);
-	printf("kk: 0x%X ", kk);
-	printf("addr: 0x%X ", addr);
-	printf("opcode: 0x%x", opcode);
+	disassemble(&memory[pc]);
 #endif
 
 	switch (code[0] >> 4)
@@ -370,7 +355,7 @@ void chip8::loop()
 		}
 		case 0xd:
 		{
-			uint8_t pixel = 0;
+			uint16_t pixel = 0;
 
 			// v[0xf] is used a test for collisions.
 			v[0xf] = 0;
@@ -432,9 +417,6 @@ void chip8::loop()
 		}
 		default: printf("Unknown opcode: %X\n", code[0] & 0xf);
 	}
-	printf("\tv[1] = 0x%x", v[1]);
-	printf(" v[7] = 0x%x", v[7]);
-	printf(" v[9] = 0x%x", v[9]);
 	printf("\n");
 
 	// Update timers
@@ -478,10 +460,7 @@ void chip8::instructions0(uint8_t kk)
 		}
 		default:
 		{
-			// TODO "This instruction is ignored by modern interpreters"
 			// SYS addr
-			
-			//pc = addr;
 			break;
 		}
 	}
@@ -552,7 +531,7 @@ void chip8::instructions8(uint8_t x, uint8_t y, uint8_t kk)
 		case 0xe:
 		{
 			// SHL Vx {, Vy}
-			v[0xf] = (v[x] & 0x80); // TODO: Is 0x80 correct value?
+			v[0xf] = (v[x] & 0x80);
 			v[x] = (v[x] << 1);
 			break;
 		}
@@ -645,10 +624,4 @@ void chip8::instructionsf(uint8_t x, uint8_t y, uint8_t kk)
 		default: printf("UNKNOWN F\n"); break;
 	}
 	pc += 2;
-}
-
-void chip8::unimplementedInstruction()
-{
-	uint8_t opcode = memory[pc] << 8 | memory[pc + 1];
-	printf("\t - Unimplemented instruction: %x\n", opcode);
 }

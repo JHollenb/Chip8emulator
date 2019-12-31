@@ -4,7 +4,7 @@
 ```
 cd chip8emulator/
 make
-./main ROMs/PONG2.ch8
+./emulator -i <path to ROM>
 ```
 
 Keys:

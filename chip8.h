@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#define WIDTH 8
 #define SCREEN_WIDTH 64
 #define SCREEN_HEIGHT 32
 #define OFFSET 0x200
@@ -45,7 +46,6 @@ private:
 	void instructions0(uint8_t kk);
 	void instructions8(uint8_t x, uint8_t y, uint8_t kk);
 	void instructionsf(uint8_t x, uint8_t y, uint8_t kk);
-	void unimplementedInstruction();
 	void p_addr(const char * call, uint8_t byte0, uint8_t byte1);
 	void p_reg_byte(const char * call, uint8_t byte0, uint8_t byte1);
 	void p_reg_reg(const char * call, uint8_t byte0, uint8_t byte1);

@@ -31,7 +31,6 @@ void reshape_window(GLsizei w, GLsizei h);
 void keyboardUp(unsigned char key, int x, int y);
 void keyboardDown(unsigned char key, int x, int y);
 
-//#define DRAWWITHTEXTURE
 typedef uint8_t u8;
 u8 screenData[SCREEN_HEIGHT][SCREEN_WIDTH][3];
 void setupTexture();
@@ -226,9 +225,6 @@ void launchOpenGL(int argc, char ** argv)
     glutReshapeFunc(reshape_window);
 	glutKeyboardFunc(keyboardDown);
 	glutKeyboardUpFunc(keyboardUp);
-#ifdef DRAWWITHTEXTURE
-	setupTexture();			
-#endif	
 
 	glutMainLoop(); 
 }
@@ -309,12 +305,8 @@ void display()
 	{
 		// Clear framebuffer
 		glClear(GL_COLOR_BUFFER_BIT);
-
-#ifdef DRAWWITHTEXTURE
-		updateTexture(myChip8);
-#else
 		updateQuads(myChip8);
-#endif
+
 		// Swap buffers!
 		glutSwapBuffers();
 

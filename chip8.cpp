@@ -1,5 +1,6 @@
 #include "chip8.h"
 #include <cstdlib>
+#include <time.h>
 
 // TODO: Move to header
 #define WIDTH 8
@@ -202,7 +203,6 @@ int chip8::loadROM()
 		fseek(m_file, 0L, SEEK_SET);
 
 		// Chip8 puts programs in memory at 0x200
-		//unsigned char * buffer = (unsigned char *) malloc (m_fsize + OFFSET);
 		fread (memory + OFFSET, m_fsize, 1, m_file);
 		fclose (m_file);
 	}
@@ -225,6 +225,7 @@ void chip8::init(const char * rom)
 	bzero(&stack, sizeof(stack));
 	bzero(&screen, sizeof(screen));
 	bzero(&key, sizeof(key));
+	bzero(&memory, sizeof(memory));
 
 	for (int i = 0; i < 80; ++i)
 	{
@@ -240,6 +241,8 @@ void chip8::init(const char * rom)
 
 	// TODO
 	drawFlag = true;
+
+	srand(time(NULL));
 }
 
 void chip8::loop()
@@ -250,12 +253,12 @@ void chip8::loop()
 	uint8_t y = (code[1] >> 4);		// (opcode & 0x00F0) >> 4
 	uint8_t n = (code[1] & 0xf);	// (opcode & 0x000F) 
 	uint8_t kk = code[1];			// (opcode & 0x00FF)
-	uint16_t addr = (x << 8 | kk);
+	uint8_t addr = (x << 8 | kk);
 
-	//disassemble(&memory[pc]);
+	disassemble(&memory[pc]);
 //#define DEBUG
 #ifdef DEBUG
-	uint16_t opcode = memory[pc] << 8 | memory[pc + 1];
+	uint8_t opcode = memory[pc] << 8 | memory[pc + 1];
 	printf(" [DEBUG] x: 0x%X ", x);
 	printf("y: 0x%X ", y);
 	printf("n: 0x%X ", n);
@@ -268,34 +271,7 @@ void chip8::loop()
 	{
 		case 0x0: 
 		{
-			switch (kk)
-			{
-				case 0xe0:
-				{
-					for (int idx = 0; idx < 2048; ++idx)
-					{
-						screen[idx] = 0x0;
-					}
-					drawFlag = true;
-					pc += 2;
-					break;
-				}
-				case 0xee:
-				{
-					// RET
-					--sp;
-					pc = stack[sp];
-					pc += 2;
-					break;
-				}
-				default:
-				{
-					// TODO "This instruction is ignored by modern interpreters"
-					// SYS addr
-					pc = addr;
-					break;
-				}
-			}
+			instructions0(kk);
 			break;
 		}
 		case 0x1:
@@ -358,77 +334,7 @@ void chip8::loop()
 		}
 		case 0x8: 
 		{
-			switch (kk & 0x0f)
-			{
-				case 0x0:
-				{
-					// LD Vx, Vy
-					v[x] = v[y];
-					break;
-				}
-				case 0x1:
-				{
-					// OR Vx, Vy
-					v[x] |= v[y];
-					break;
-				}
-				case 0x2:
-				{
-					// AND Vx, Vy
-					v[x] &= v[y];
-					break;
-				}
-				case 0x3:
-				{
-					// XOR Vx, Vy
-					v[x] ^= v[y];
-					break;
-				}
-				case 0x4: 
-				{
-					// ADD Vx, Vy
-					v[x] += v[y];
-
-					// Set carry flag if result is greater than 8 bits
-					v[0xf] = (v[x] + v[y] > 255);
-					break;
-				}
-				case 0x5:
-				{
-					// SUB Vx, Vy
-					v[x] = v[x] - v[y];
-
-					// TODO: Make sure interpretation is correct
-					// Set NOT borrow flag
-					v[0xf] = (v[x] > v[y]);
-					break;
-				}
-				case 0x6:
-				{
-					// SHR Vx {, Vy}
-					v[0xf] = (v[x] & 0x1);
-					v[x] = (v[x] >> 1);
-					break;
-				}
-				case 0x7:
-				{
-					// SUBN Vx, Vy
-					v[x] = v[y] - v[x];
-
-					// Set NOT borrow flag
-					v[0xf] = (v[y] > v[x]);
-					break;
-				}
-				case 0xe:
-				{
-					// SHL Vx {, Vy}
-					v[0xf] = (v[x] & 0x80); // TODO: Is 0x80 correct value?
-					v[x] = (v[x] << 1);
-					break;
-				}
-				default: printf("UNKNOWN 8\n"); break;
-			}
-			pc += 2;
+			instructions8(x, y, kk);
 			break;
 		}
 		case 0x9: 
@@ -521,94 +427,15 @@ void chip8::loop()
 		}
 		case 0xf:
 		{
-			switch (kk)
-			{
-				case 0x07:
-				{
-					// LD Vx, DT
-					v[x] = delay;
-					break;
-				}
-				case 0x0a:
-				{
-					bool keyPress = false;
-
-					for (int idx = 0; idx < 16; ++idx)
-					{
-						if (key[idx] != 0)
-						{
-							v[x] = idx;
-							keyPress = true;
-						}
-					}
-
-					if (!keyPress)
-					{
-						return;
-					}
-					break;
-				}
-				case 0x15:
-				{
-					// LD DT, Vx
-					delay = v[x];
-					break;
-				}
-				case 0x18:
-				{
-					// LD ST, Vx
-					sound = v[x];
-					break;
-				}
-
-				case 0x1e:
-				{
-					v[0xf] = (I + v[x] > 0xfff);
-					I += v[x];
-					break;
-				}
-
-				case 0x29:
-				{	
-					I = v[x] * 0x5;
-					break;
-				}
-				case 0x33: 
-				{
-					// LD B, Vx
-					memory[I] = v[x] / 100;
-					memory[I + 1] = (v[x] / 10) % 10;;
-					memory[I + 2] = (v[x] % 100) % 10;
-					break;
-				}
-				case 0x55: 
-				{
-					// LD I, Vx
-					for (uint8_t i = 0; i <= x; ++i)
-					{
-						memory[I + i] = v[i];
-					}
-					I += (x + 1);
-					break;
-				}
-				case 0x65:
-				{
-					// LD Vx, I
-					for (uint8_t i = 0; i <= x; ++i)
-					{
-						v[i] = memory[I + i];
-					}
-					I += (x + 1);
-					break;
-				}
-				default: printf("UNKNOWN F\n"); break;
-			}
-			pc += 2;
+			instructionsf(x, y, kk);
 			break;
 		}
 		default: printf("Unknown opcode: %X\n", code[0] & 0xf);
 	}
-	//printf("\n");
+	printf("\tv[1] = 0x%x", v[1]);
+	printf(" v[7] = 0x%x", v[7]);
+	printf(" v[9] = 0x%x", v[9]);
+	printf("\n");
 
 	// Update timers
 	if (delay > 0)
@@ -626,8 +453,202 @@ void chip8::loop()
 	}
 }
 
+void chip8::instructions0(uint8_t kk)
+{
+	switch (kk)
+	{
+		case 0xe0:
+		{
+			for (int i = 0; i < 2048; ++i)
+			{
+				screen[i] = 0x0;
+			}
+
+			drawFlag = true;
+			pc += 2;
+			break;
+		}
+		case 0xee:
+		{
+			// RET
+			--sp;
+			pc = stack[sp];
+			pc += 2;
+			break;
+		}
+		default:
+		{
+			// TODO "This instruction is ignored by modern interpreters"
+			// SYS addr
+			
+			//pc = addr;
+			break;
+		}
+	}
+}
+
+void chip8::instructions8(uint8_t x, uint8_t y, uint8_t kk)
+{
+	switch (kk & 0x0f)
+	{
+		case 0x0:
+		{
+			// LD Vx, Vy
+			v[x] = v[y];
+			break;
+		}
+		case 0x1:
+		{
+			// OR Vx, Vy
+			v[x] |= v[y];
+			break;
+		}
+		case 0x2:
+		{
+			// AND Vx, Vy
+			v[x] &= v[y];
+			break;
+		}
+		case 0x3:
+		{
+			// XOR Vx, Vy
+			v[x] ^= v[y];
+			break;
+		}
+		case 0x4: 
+		{
+			// Set carry flag if result is greater than 8 bits
+			v[0xf] = (v[x] + v[y] > 0xFF);
+
+			// ADD Vx, Vy
+			v[x] += v[y];
+			break;
+		}
+		case 0x5:
+		{
+			// Set NOT borrow flag
+			v[0xf] = (v[x] > v[y]);
+
+			// SUB Vx, Vy
+			v[x] = v[x] - v[y];
+			break;
+		}
+		case 0x6:
+		{
+			// SHR Vx {, Vy}
+			v[0xf] = (v[x] & 0x1);
+			v[x] = (v[x] >> 1);
+			break;
+		}
+		case 0x7:
+		{
+			// SUBN Vx, Vy
+			v[x] = v[y] - v[x];
+
+			// Set NOT borrow flag
+			v[0xf] = (v[y] > v[x]);
+			break;
+		}
+		case 0xe:
+		{
+			// SHL Vx {, Vy}
+			v[0xf] = (v[x] & 0x80); // TODO: Is 0x80 correct value?
+			v[x] = (v[x] << 1);
+			break;
+		}
+		default: printf("UNKNOWN 8\n"); break;
+	}
+	pc += 2;
+}
+
+void chip8::instructionsf(uint8_t x, uint8_t y, uint8_t kk)
+{
+	switch (kk)
+	{
+		case 0x07:
+		{
+			// LD Vx, DT
+			v[x] = delay;
+			break;
+		}
+		case 0x0a:
+		{
+			bool keyPress = false;
+			for (int i = 0; i < 16; ++i)
+			{
+				if (key[i] != 0)
+				{
+					v[x] = i;
+					keyPress = true;
+				}
+			}
+
+			if (!keyPress)
+			{
+				return;
+			}
+			break;
+		}
+		case 0x15:
+		{
+			// LD DT, Vx
+			delay = v[x];
+			break;
+		}
+		case 0x18:
+		{
+			// LD ST, Vx
+			sound = v[x];
+			break;
+		}
+
+		case 0x1e:
+		{
+			v[0xf] = (I + v[x] > 0xfff);
+			I += v[x];
+			break;
+		}
+
+		case 0x29:
+		{	
+			I = v[x] * 5;
+			break;
+		}
+		case 0x33: 
+		{
+			// LD B, Vx
+			memory[I] = v[x] / 100;
+			memory[I + 1] = (v[x] / 10) % 10;;
+			memory[I + 2] = (v[x] % 100) % 10;
+			break;
+		}
+		case 0x55: 
+		{
+			// LD I, Vx
+			for (uint8_t i = 0; i <= x; ++i)
+			{
+				memory[I + i] = v[i];
+			}
+			I += (x + 1);
+			break;
+		}
+		case 0x65:
+		{
+			// LD Vx, I
+			for (uint8_t i = 0; i <= x; ++i)
+			{
+				v[i] = memory[I + i];
+			}
+			I += (x + 1);
+			break;
+		}
+		default: printf("UNKNOWN F\n"); break;
+	}
+	pc += 2;
+}
+
 void chip8::unimplementedInstruction()
 {
-	uint16_t opcode = memory[pc] << 8 | memory[pc + 1];
+	uint8_t opcode = memory[pc] << 8 | memory[pc + 1];
 	printf("\t - Unimplemented instruction: %x\n", opcode);
 }

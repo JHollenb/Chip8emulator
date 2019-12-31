@@ -21,21 +21,10 @@ public:
 	//void init();
 	void init(const char * rom);
 	void loop();
-	void drawGraphics();
-	void setKeys();
-
-	// Member var
-	bool drawFlag;
-	void p_addr(const char * call, uint8_t byte0, uint8_t byte1);
-	void p_reg_byte(const char * call, uint8_t byte0, uint8_t byte1);
-	void p_reg_reg(const char * call, uint8_t byte0, uint8_t byte1);
-	void p_reg(const char * call, uint8_t byte);
-	int openROM();
-	int loadROM();
 	void disassemble (uint8_t * code);
-	void unimplementedInstruction();
-	
+
 	// Member vars
+	bool drawFlag;
 	const char * m_romPath;
 	FILE * m_file;
 	int m_fsize;
@@ -53,4 +42,14 @@ public:
 	uint8_t key[16];			// Hex keypad 0x0 - 0xf
 protected:
 private:
+	void instructions0(uint8_t kk);
+	void instructions8(uint8_t x, uint8_t y, uint8_t kk);
+	void instructionsf(uint8_t x, uint8_t y, uint8_t kk);
+	void unimplementedInstruction();
+	void p_addr(const char * call, uint8_t byte0, uint8_t byte1);
+	void p_reg_byte(const char * call, uint8_t byte0, uint8_t byte1);
+	void p_reg_reg(const char * call, uint8_t byte0, uint8_t byte1);
+	void p_reg(const char * call, uint8_t byte);
+	int openROM();
+	int loadROM();
 };

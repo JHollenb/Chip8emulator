@@ -1,5 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <stdio.h> #include <stdlib.h>
 #include <unistd.h>
 #include <ncurses.h>
 #include <time.h>
@@ -31,7 +30,7 @@ void reshape_window(GLsizei w, GLsizei h);
 void keyboardUp(unsigned char key, int x, int y);
 void keyboardDown(unsigned char key, int x, int y);
 
-//#define DRAWWITHTEXTURE
+#define DRAWWITHTEXTURE
 typedef uint8_t u8;
 u8 screenData[SCREEN_HEIGHT][SCREEN_WIDTH][3];
 void setupTexture();
@@ -40,14 +39,13 @@ void launchOpenGL(int argc, char ** argv);
 
 int main(int argc, char **argv)
 {
-
 	if(argc < 3)
 	{
-		printf("How to use: ./emu8 chip8application\n\n");
+		printf("How to use: ./emulator -[t|o] <path to ROMs>\n\n");
 		return 1;
 	}
 
-	char * flag = argv[1];
+	char * flag = argv[1];	
 	char * rom = argv[2];
 
 	if (strcmp(flag, "-t") == 0)
@@ -70,9 +68,9 @@ void launchTerminal(char * rom)
 	nodelay(stdscr, TRUE);	
 	cbreak();
 	noecho();	
-	while(1) // main loop
-	{
 
+	while (1)
+	{
 		pressedKey = getch();
 		handleKeyboardInput();
 		myChip8.loop();
@@ -81,11 +79,12 @@ void launchTerminal(char * rom)
 		refresh();	
 		usleep(2200);
 		if(kbhit())
+		{
 			unsetKeys();
+		}
 	}
 	getch();
 	endwin();
-
 }
 
 
@@ -143,16 +142,12 @@ void unsetKeys()
 	{
 		myChip8.key[k] = 0;
 	}
-
 }
 
 void handleKeyboardInput()
 {
 	switch(pressedKey)
 	{
-		case 27:
-			exit(0);
-			break;
 		case 49:
 			myChip8.key[0x1] = 1;		
 			break;	
@@ -366,7 +361,7 @@ void keyboardDown(unsigned char key, int x, int y)
 	else if(key == 'c')	myChip8.key[0xB] = 1;
 	else if(key == 'v')	myChip8.key[0xF] = 1;
 
-	printf("Press key %c\n", key);
+	//printf("Press key %c\n", key);
 }
 
 void keyboardUp(unsigned char key, int x, int y)

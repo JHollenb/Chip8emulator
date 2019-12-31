@@ -253,12 +253,12 @@ void chip8::loop()
 	uint8_t y = (code[1] >> 4);		// (opcode & 0x00F0) >> 4
 	uint8_t n = (code[1] & 0xf);	// (opcode & 0x000F) 
 	uint8_t kk = code[1];			// (opcode & 0x00FF)
-	uint8_t addr = (x << 8 | kk);
+	uint16_t addr = (x << 8 | kk);
 
 	disassemble(&memory[pc]);
 //#define DEBUG
 #ifdef DEBUG
-	uint8_t opcode = memory[pc] << 8 | memory[pc + 1];
+	uint16_t opcode = memory[pc] << 8 | memory[pc + 1];
 	printf(" [DEBUG] x: 0x%X ", x);
 	printf("y: 0x%X ", y);
 	printf("n: 0x%X ", n);

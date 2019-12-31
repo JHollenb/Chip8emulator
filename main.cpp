@@ -1,4 +1,5 @@
-#include <stdio.h> #include <stdlib.h>
+#include <stdio.h> 
+#include <stdlib.h>
 #include <unistd.h>
 #include <ncurses.h>
 #include <time.h>
@@ -30,7 +31,7 @@ void reshape_window(GLsizei w, GLsizei h);
 void keyboardUp(unsigned char key, int x, int y);
 void keyboardDown(unsigned char key, int x, int y);
 
-#define DRAWWITHTEXTURE
+//#define DRAWWITHTEXTURE
 typedef uint8_t u8;
 u8 screenData[SCREEN_HEIGHT][SCREEN_WIDTH][3];
 void setupTexture();

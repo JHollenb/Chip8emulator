@@ -17,4 +17,4 @@ chip8.o: chip8.cpp chip8.h
 	$(CC) $(CFLAGS) -c chip8.cpp
 
 clean:
-	$(RM) -rf *.o main
+	$(RM) -rf *.o emulator

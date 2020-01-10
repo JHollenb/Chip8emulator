@@ -417,7 +417,9 @@ void chip8::loop()
 		}
 		default: printf("Unknown opcode: %X\n", code[0] & 0xf);
 	}
+#ifdef DEBUG
 	printf("\n");
+#endif
 
 	// Update timers
 	if (delay > 0)

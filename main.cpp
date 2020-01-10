@@ -9,18 +9,6 @@
 chip8 myChip8;
 
 /////////////////////////////////////////////////////////////////
-// Terminal functions
-/////////////////////////////////////////////////////////////////
-char pressedKey;
-void clearGFXMemory();
-void outputGFXBuffer();
-int kbhit();
-void unsetKeys();
-void handleKeyboardInput();
-void launchTerminal(char *);
-/////////////////////////////////////////////////////////////////
-
-/////////////////////////////////////////////////////////////////
 // OpenGL functions
 /////////////////////////////////////////////////////////////////
 int modifier = 15;
@@ -39,170 +27,48 @@ void launchOpenGL(int argc, char ** argv);
 
 int main(int argc, char **argv)
 {
-	if(argc < 3)
+	char * flag = argv[1];
+
+	if (argc == 2)
 	{
-		printf("How to use: ./emulator -[t|o] <path to ROMs>\n\n");
-		return 1;
+		myChip8.init(argv[1]);
+		myChip8.printDisassembly();
 	}
-
-	char * flag = argv[1];	
-	char * rom = argv[2];
-
-	if (strcmp(flag, "-t") == 0)
+	else if (argc == 3)
 	{
-		launchTerminal(rom);
+		if (strcmp(flag, "--disassemble") == 0)
+		{
+			myChip8.init(argv[2]);
+			myChip8.printDisassembly();
+		}
+		else if (strcmp(flag, "-d") == 0)
+		{
+			myChip8.init(argv[2]);
+			myChip8.printDisassembly();
+		}
+		else if (strcmp(flag, "--play") == 0)
+		{
+			launchOpenGL(argc, argv);
+		}
+		else if (strcmp(flag, "-p") == 0)
+		{
+			launchOpenGL(argc, argv);
+		}
+		else
+		{
+			printf("How to use: ./emulator [-d disassemble | --disassemble] [-p play | --play] [path to ROMs]\n");
+			printf("        or  ./emulator [path to ROMS] will default to the disassemble option.\n");
+			return 1;
+		}
 	}
 	else
 	{
-		launchOpenGL(argc, argv);
+		printf("How to use: ./emulator [-d disassemble | --disassemble] [-p play | --play] [path to ROMs]\n");
+		printf("        or  ./emulator [path to ROMS] will default to the disassemble option.\n");
+		return 1;
 	}
 
 	return 0;
-}
-
-void launchTerminal(char * rom)
-{
-	initscr();
-	myChip8.init(rom);
-    clearGFXMemory();
-	nodelay(stdscr, TRUE);	
-	cbreak();
-	noecho();	
-
-	while (1)
-	{
-		pressedKey = getch();
-		handleKeyboardInput();
-		myChip8.loop();
-		if(myChip8.drawFlag)
-			outputGFXBuffer();
-		refresh();	
-		usleep(2200);
-		if(kbhit())
-		{
-			unsetKeys();
-		}
-	}
-	getch();
-	endwin();
-}
-
-
-void clearGFXMemory()
-{
-	for(int i = 0; i < 2048; ++i)
-	{	
-		myChip8.screen[i] = 0;
-	}
-}
-
-void outputGFXBuffer()
-{
-	int y = 0;
-	int x = 0;
-
-	for(y = 0; y < 32; y++)
-	{
-		for(x = 0; x < 64; x++)
-		{
-			move (y,x);
-
-			if (myChip8.screen[x + (y * 64)])
-			{
-				attron(A_REVERSE);
-				printw(" ");
-				attroff(A_REVERSE);
-			}
-			else
-			{
-				printw(" ");
-			}
-		}
-	}
-}
-
-
-int kbhit(void)
-{
-	int retval = 0;
-    int ch = getch();
-
-    if (ch != ERR) 
-	{
-        ungetch(ch);
-        retval = 1;
-    } 
-
-	return retval;
-}
-
-void unsetKeys()
-{
-	for(uint8_t k = 0; k <= 0xf; k++)
-	{
-		myChip8.key[k] = 0;
-	}
-}
-
-void handleKeyboardInput()
-{
-	switch(pressedKey)
-	{
-		case 49:
-			myChip8.key[0x1] = 1;		
-			break;	
-		case 50:
-			myChip8.key[0x2] = 1;
-			break;
-		case 51:
-			myChip8.key[0x3] = 1;
-			break;
-		case 52:
-			myChip8.key[0xC] = 1;
-			break;
-
-		case 113:
-			myChip8.key[0x4] = 1;		
-			break;
-		case 119:
-			myChip8.key[0x5] = 1;		
-			break;
-		case 101:
-			myChip8.key[0x6] = 1;		
-			break;
-		case 114:
-			myChip8.key[0xD] = 1;		
-			break;
-
-		case 97:
-			myChip8.key[0x7] = 1;		
-			break;
-		case 115:
-			myChip8.key[0x8] = 1;		
-			break;
-		case 100:
-			myChip8.key[0x9] = 1;		
-			break;
-		case 102:
-			myChip8.key[0xE] = 1;		
-			break;
-
-		case 121:
-			myChip8.key[0xA] = 1;		
-			break;
-		case 120:
-			myChip8.key[0x0] = 1;		
-			break;
-		case 99:
-			myChip8.key[0xB] = 1;		
-			break;
-		case 118:
-			myChip8.key[0xF] = 1;		
-			break;
-		
-		default:
-			break;
-	}
 }
 
 /////////////////////////////////////////////////////////////////
@@ -210,7 +76,6 @@ void handleKeyboardInput()
 /////////////////////////////////////////////////////////////////
 void launchOpenGL(int argc, char ** argv)
 {
-	// Initialize chip8 and load ROM into memory
 	myChip8.init(argv[2]);
 
 	glutInit(&argc, argv);
@@ -218,7 +83,7 @@ void launchOpenGL(int argc, char ** argv)
 
 	glutInitWindowSize(display_width, display_height);
     glutInitWindowPosition(320, 320);
-	glutCreateWindow("myChip8");
+	glutCreateWindow("Chip8 Emulator");
 
 	glutDisplayFunc(display);
 	glutIdleFunc(display);
@@ -303,14 +168,9 @@ void display()
 
 	if(myChip8.drawFlag)
 	{
-		// Clear framebuffer
 		glClear(GL_COLOR_BUFFER_BIT);
 		updateQuads(myChip8);
-
-		// Swap buffers!
 		glutSwapBuffers();
-
-		// Processed frame
 		myChip8.drawFlag = false;
 	}
 }

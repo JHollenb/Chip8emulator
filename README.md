@@ -3,8 +3,9 @@
 ## To run:
 ```
 cd chip8emulator/
-make
-./emulator -i <path to ROM>
+make 
+./emulator [-d disassemble | --disassemble] [-p play | --play] [path to ROMs]
+or  ./emulator [path to ROMS] will default to the disassemble option.
 ```
 
 Keys:

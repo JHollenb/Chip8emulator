@@ -9,6 +9,7 @@
 #define OFFSET 0x200
 #define SUCCESS 0
 #define ERROR -1
+#define COLLISION_REG 0xF
 
 // See [Chip 8](http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#0.1)
 

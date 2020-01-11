@@ -357,8 +357,9 @@ void chip8::loop()
 		{
 			uint16_t pixel = 0;
 
-			// v[0xf] is used a test for collisions.
-			v[0xf] = 0;
+			// v[0xf] is used a test for collisions. This what is used to check if the
+			// ball has collided with the paddle.
+			v[COLLISION_REG] = 0;
 			for (int yline = 0; yline < n; yline++)
 			{
 				pixel = memory[I + yline];
@@ -370,7 +371,8 @@ void chip8::loop()
 						// If any pixels changed from 1 to 0, set collision flag
 						if (screen[(v[x] + xline + ((v[y] + yline) * SCREEN_WIDTH))] == 1)
 						{
-							v[0xf] = 1;
+							// Set the collision register. Ball has collided.
+							v[COLLISION_REG] = 1;
 						}
 
 						// Set pixel via XOR op
@@ -443,6 +445,7 @@ void chip8::instructions0(uint8_t kk)
 	{
 		case 0xe0:
 		{
+			// CLS
 			for (int i = 0; i < 2048; ++i)
 			{
 				screen[i] = 0x0;
@@ -498,8 +501,8 @@ void chip8::instructions8(uint8_t x, uint8_t y, uint8_t kk)
 		}
 		case 0x4: 
 		{
-			// Set carry flag if result is greater than 8 bits
-			v[0xf] = (v[x] + v[y] > 0xFF);
+			// Set collision register if result is greater than 8 bits
+			v[COLLISION_REG] = (v[x] + v[y] > 0xFF);
 
 			// ADD Vx, Vy
 			v[x] += v[y];
@@ -507,8 +510,7 @@ void chip8::instructions8(uint8_t x, uint8_t y, uint8_t kk)
 		}
 		case 0x5:
 		{
-			// Set NOT borrow flag
-			v[0xf] = (v[x] > v[y]);
+			v[COLLISION_REG] = (v[x] > v[y]);
 
 			// SUB Vx, Vy
 			v[x] = v[x] - v[y];
@@ -517,7 +519,7 @@ void chip8::instructions8(uint8_t x, uint8_t y, uint8_t kk)
 		case 0x6:
 		{
 			// SHR Vx {, Vy}
-			v[0xf] = (v[x] & 0x1);
+			v[COLLISION_REG] = (v[x] & 0x1);
 			v[x] = (v[x] >> 1);
 			break;
 		}
@@ -527,13 +529,13 @@ void chip8::instructions8(uint8_t x, uint8_t y, uint8_t kk)
 			v[x] = v[y] - v[x];
 
 			// Set NOT borrow flag
-			v[0xf] = (v[y] > v[x]);
+			v[COLLISION_REG] = (v[y] > v[x]);
 			break;
 		}
 		case 0xe:
 		{
 			// SHL Vx {, Vy}
-			v[0xf] = (v[x] & 0x80);
+			v[COLLISION_REG] = (v[x] & 0x80);
 			v[x] = (v[x] << 1);
 			break;
 		}
@@ -554,6 +556,7 @@ void chip8::instructionsf(uint8_t x, uint8_t y, uint8_t kk)
 		}
 		case 0x0a:
 		{
+			// LD Vx, K
 			bool keyPress = false;
 			for (int i = 0; i < 16; ++i)
 			{
@@ -585,13 +588,15 @@ void chip8::instructionsf(uint8_t x, uint8_t y, uint8_t kk)
 
 		case 0x1e:
 		{
-			v[0xf] = (I + v[x] > 0xfff);
+			// ADD I, Vx
+			v[COLLISION_REG] = (I + v[x] > 0xfff);
 			I += v[x];
 			break;
 		}
 
 		case 0x29:
 		{	
+			// LD F, Vx
 			I = v[x] * 5;
 			break;
 		}
